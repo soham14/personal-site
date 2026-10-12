@@ -97,7 +97,7 @@ export function initTrials(root: HTMLElement): void {
     );
     top.append(port, txtBox);
     const btns = el('div', 'display:flex;flex-wrap:wrap;gap:10px;padding:0 16px 16px;');
-    btns.append(button(isStk ? 'Start' : 'Start trial', btnP(P), () => begin(false)), button(isStk ? 'Not now' : 'Skip trial', btnS, close));
+    btns.append(button('Start trial', btnP(P), () => begin(false)), button(isStk ? 'Not now' : 'Skip trial', btnS, close));
     w.append(top, btns);
     mount(w);
     setState({ trial: { kind, phase: 'prompt', gate }, talk: null, half: null });
