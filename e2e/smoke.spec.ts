@@ -155,7 +155,7 @@ test.describe('touch (phones)', () => {
     const diag = await d.evaluate((e) => ({ pz: getComputedStyle(document.documentElement).getPropertyValue('--pz'), zoom: getComputedStyle(e).zoom, ih: innerHeight, rectH: e.getBoundingClientRect().height, offH: (e as HTMLElement).offsetHeight }));
     console.log('landscape diag', JSON.stringify(diag), JSON.stringify(box));
     expect(box.y).toBeGreaterThanOrEqual(0);
-    expect(box.y + box.height).toBeLessThanOrEqual(portrait.width + 1);
+    expect(box.y + box.height, 'diag ' + JSON.stringify(diag)).toBeLessThanOrEqual(portrait.width + 1);
     await d.locator('button', { hasText: 'End chat' }).click();
 
     await page.setViewportSize(portrait);
