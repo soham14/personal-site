@@ -1,5 +1,5 @@
 /* DOM UI overlays (ported from the mockup's template/CSS). Mounted in #ui above the #game canvas. */
-#ui{position:fixed;inset:0;z-index:2;pointer-events:none;color:#f4f1e8;font-family:'Space Mono',monospace;overflow:hidden}
+#ui{position:fixed;inset:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);z-index:2;pointer-events:none;color:#f4f1e8;font-family:'Space Mono',monospace;overflow:hidden}
 #ui a{color:#ffd166}#ui a:hover{color:#fff1c4}
 #ui button,#ui a,#ui [data-ui-hit]{pointer-events:auto}
 #ui .cq-modal{pointer-events:auto}
