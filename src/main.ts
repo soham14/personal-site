@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import './fonts.css';
 import './styles.css';
 import { WorldScene } from './scenes/WorldScene.ts';
 import { initUI, registerSW } from './ui/index.ts';

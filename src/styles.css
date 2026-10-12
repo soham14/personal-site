@@ -49,3 +49,7 @@ html { -webkit-tap-highlight-color: transparent; }
 }
 #ui { -webkit-user-select: none; user-select: none; }
 #ui .cq-profile, #ui .cq-modal { -webkit-user-select: text; user-select: text; }
+
+/* Résumé overlay: keep the back bar below the notch/status bar and content above the home bar. */
+.cq-resume > div:first-child { padding-top: calc(12px + env(safe-area-inset-top, 0px)) !important; padding-left: calc(16px + env(safe-area-inset-left, 0px)) !important; }
+.cq-resume-scroll { padding-bottom: env(safe-area-inset-bottom, 0px); }

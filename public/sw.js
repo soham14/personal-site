@@ -1,5 +1,5 @@
 // Cache-first app shell. Bump VERSION to invalidate.
-const VERSION = 'cq-v2';
+const VERSION = 'cq-v3';
 const SHELL = ['./', './index.html', './resume/', './favicon.svg', './manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
