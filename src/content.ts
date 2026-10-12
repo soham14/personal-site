@@ -58,8 +58,8 @@ export const MAPS = [
     sky: ['#3a8ee0', '#6cb3f0', '#b4ddf8'], far: '#8db6de', mid: '#2f5f9e', midHi: '#4479bd', win: '#cfe8ff', day: true,
     g: { top: '#4a86c8', shade: '#2f5f96', body: '#1b3d6e', deco: '#14305a' }, p: { t: '#9fc4ee', s: '#2f7fd6', b: '#24508f', d: '#1b3d6e' }, lad: '#9fc4ee', stars: 0 },
   { name: 'Crimson Grove', short: 'Yelp', a: '#c8323a', tx: '#ff8a8f', bar: '#8f1f27', barTx: '#f6ecd2', port: '#8f1f27', portHi: '#b3333c',
-    sky: ['#150c1a', '#22101f', '#321626'], far: '#3a1a2c', mid: '#8f2630', midHi: '#c8323a', win: '#ffd98a',
-    g: { top: '#9c7a64', shade: '#6e5444', body: '#3a2a2a', deco: '#2a1d1d' }, p: { t: '#c8323a', s: '#8f1f27', b: '#8a5a3a', d: '#5a3a28' }, lad: '#d9a05a', stars: 24 },
+    sky: ['#3a2152', '#b8476a', '#f2945a'], far: '#5a2238', sunset: true, mid: '#8f2630', midHi: '#c8323a', win: '#ffd98a',
+    g: { top: '#9c7a64', shade: '#6e5444', body: '#3a2a2a', deco: '#2a1d1d' }, p: { t: '#c8323a', s: '#8f1f27', b: '#8a5a3a', d: '#5a3a28' }, lad: '#d9a05a', stars: 6 },
   { name: 'Obsidian Spire', short: 'Roblox', a: '#c9ccd3', tx: '#e8eaf0', bar: '#2b2b2e', barTx: '#e8eaf0', port: '#2b2b2e', portHi: '#4a4a52',
     sky: ['#08080c', '#0f0f14', '#17171d'], far: '#1e1e25', mid: '#2b2b2e', midHi: '#3a3a40', win: '#e8eaf0',
     g: { top: '#5a5a64', shade: '#3a3a40', body: '#2b2b2e', deco: '#1c1c20' }, p: { t: '#c9ccd3', s: '#8d9099', b: '#2b2b2e', d: '#3a3a40' }, lad: '#c9ccd3', stars: 72 }

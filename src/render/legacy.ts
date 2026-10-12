@@ -932,6 +932,13 @@ class Legacy {
     // Stars (densest on the observatory map)
     const stars = [];
     const maxTop = tier === 3 ? 60 : 44;
+    if (m.sunset) {
+      // Sunset sky (Crimson Grove): a big low sun sinking behind the far hills, with long thin cloud streaks
+      stars.push({ s: 'position:absolute;left:58%;top:52%;width:150px;height:150px;background:#ffd27a;border-radius:50%;box-shadow:0 0 0 10px rgba(255,190,110,0.45);' });
+      [[10, 30, 220], [34, 44, 160], [70, 26, 200], [86, 40, 140]].forEach((c) => {
+        stars.push({ s: 'position:absolute;left:' + c[0] + '%;top:' + c[1] + '%;width:' + c[2] + 'px;height:8px;background:#f7b38a;border-radius:4px;box-shadow:0 4px 0 #d9707a;' });
+      });
+    }
     if (m.day) {
       // Daytime sky (Azure Citadel): a blocky sun with a soft halo, and a few drifting pixel clouds
       stars.push({ s: 'position:absolute;left:78%;top:9%;width:64px;height:64px;background:#fff1a8;border-radius:50%;box-shadow:0 0 0 6px #ffd95a;' });
