@@ -32,6 +32,7 @@ export class WorldScene extends Phaser.Scene {
   private W = 0; private H = 0;
   private sky!: Phaser.GameObjects.Graphics;
   private warm = 20;
+  private lastNow = 0;
   private moon!: Phaser.GameObjects.Container;
   private moonDisc!: Phaser.GameObjects.Image;
   private constel!: Phaser.GameObjects.Graphics;
@@ -221,9 +222,14 @@ export class WorldScene extends Phaser.Scene {
     for (const l of lines) for (let j = 0; j < l.length; j += 2) { const [x, y] = P(l[j], l[j + 1]); g.fillCircle(x, y, 3 * k); }
   }
 
-  update(_time: number, delta: number) {
-    const dt = Math.min(0.25, delta / 1000);
-    this.t += delta / 1000;
+  update(_time: number, _delta: number) {
+    // Use real elapsed time. Phaser's delta is smoothed and snaps to ~16ms after a stall, which made
+    // the game run in slow motion while a phone was busy (e.g. right after the music starts).
+    const now = performance.now();
+    const raw = this.lastNow ? (now - this.lastNow) / 1000 : 1 / 60;
+    this.lastNow = now;
+    const dt = Math.min(0.25, Math.max(0, raw));
+    this.t += dt;
     tick(dt);
     this.drawSky();
     if (!this.ready) return;

@@ -43,6 +43,7 @@ new Phaser.Game({
   parent: 'game',
   backgroundColor: '#0b1330',
   pixelArt: true,
+  fps: { smoothStep: false },
   scale: { mode: Phaser.Scale.RESIZE, width: window.innerWidth, height: window.innerHeight },
   scene: [WorldScene]
 });
