@@ -14,7 +14,7 @@ export const PROFILE = {
 export const STAGES = [
   {
     id: 'berkeley', org: 'UC Berkeley', title: 'B.A. Computer Science', jobTitle: 'Student', cls: 'Apprentice',
-    dates: 'Aug 2014 – May 2018', years: '2014–2018', team: 'B.A. in Computer Science', highlights: [] as string[],
+    dates: 'Aug 2014 – May 2018', years: '2014–2018', team: 'B.A. Computer Science', highlights: [] as string[],
     outfit: 'Navy tunic, gold piping',
     crest: 'Golden Bear Crest', crestField: '#1d3a6b', crestTrim: '#f2b632',
     quest: 'Graduate from the Academy', rewardExp: '+5000 EXP'
