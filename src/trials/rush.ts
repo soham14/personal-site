@@ -3,7 +3,8 @@ import { Layer, el, fontP, sfx, log, sty, txt, SR, STARC, viewW, type Part } fro
 import { palette, stdWindow, CRIM, CREAMT } from './shell.ts';
 import type { TrialCtx, TrialGame } from './types.ts';
 
-interface Obj { id: number; k: 'star' | 'feat' | 'peb'; x: number; y: number; ph: number; sx: number }
+type Kind = 'star' | 'feat' | 'peb';
+interface Obj { id: number; k: Kind; x: number; y: number; ph: number; sx: number }
 interface Pop { id: number; t: string; x: number; y: number; age: number; c: string }
 
 const d = (l: number, t: number, w: number, h: number, bg: string, ex = '') => ({ l, t, w, h, bg, ex });
@@ -22,6 +23,20 @@ const GD = {
     d(10, 3, 7, 7, '#9a9aa2', STARC)
   ]
 };
+
+/** Length of a round in seconds (after the countdown). */
+export const RUSH_SECONDS = 20;
+
+/** Star rating (1-5) for a final score. */
+export function rushStars(sc: number): number {
+  return sc >= 25 ? 5 : (sc >= 18 ? 4 : (sc >= 12 ? 3 : (sc >= 6 ? 2 : 1)));
+}
+
+/** Score and combo after catching one falling object: stars add to both, a pebble costs a point (never below 0) and breaks the combo. */
+export function scoreCatch(score: number, combo: number, k: Kind): { score: number; combo: number } {
+  if (k === 'peb') return { score: Math.max(0, score - 1), combo: 0 };
+  return { score: score + (k === 'feat' ? 3 : 1), combo: combo + 1 };
+}
 
 // Static night-grove scenery (gameDecor in the mockup).
 function gameDecor(): { decor: Part[]; bulbs: Part[] } {
@@ -71,7 +86,7 @@ export function createRush(ctx: TrialCtx): TrialGame {
   const root = stdWindow(P, 'Five-Star Rush', 'FIVE-STAR RUSH', 'Quit Five-Star Rush', ctx.close);
   const gw0 = Math.max(240, Math.round(Math.min(680, viewW() * 0.94) - 6));
   const g = {
-    phase: 'count' as 'count' | 'play', cd: 3, cdn: -1, t: 0, time: 20, score: 0, combo: 0, cx: gw0 / 2, face: 1, mv: false,
+    phase: 'count' as 'count' | 'play', cd: 3, cdn: -1, t: 0, time: RUSH_SECONDS, score: 0, combo: 0, cx: gw0 / 2, face: 1, mv: false,
     objs: [] as Obj[], pops: [] as Pop[], nid: 1, spawn: 0.4, stun: 0, glow: 0, flash: 0, clock: 0, gw: gw0
   };
   const k = { l: false, r: false, side: null as null | 'left' | 'right', ptr: null as number | null };
@@ -127,14 +142,15 @@ export function createRush(ctx: TrialCtx): TrialGame {
 
   let measured = false;
   const catchObj = (o: Obj, ox: number) => {
-    const popY = 214;
+    const popY = 214, before = g.score;
+    Object.assign(g, scoreCatch(g.score, g.combo, o.k));
     if (o.k === 'peb') {
-      g.score = Math.max(0, g.score - 1); g.combo = 0; g.stun = 0.4; g.flash = 0.4;
+      g.stun = 0.4; g.flash = 0.4;
       g.pops.push({ id: g.nid++, t: '−1', x: ox, y: popY, age: 0, c: '#ff8a8a' });
       sfx('peb');
     } else {
-      const pts = o.k === 'feat' ? 3 : 1;
-      g.score += pts; g.combo += 1; g.glow = 0.35;
+      g.glow = 0.35;
+      const pts = g.score - before;
       g.pops.push({ id: g.nid++, t: '+' + pts, x: ox, y: popY, age: 0, c: o.k === 'feat' ? '#fff3c4' : '#ffd166' });
       if (o.k === 'feat') sfx('feat'); else sfx('catch', g.combo);
     }
@@ -148,8 +164,8 @@ export function createRush(ctx: TrialCtx): TrialGame {
     sty(comboEl, fontP + 'display:inline-block;min-width:96px;box-sizing:border-box;padding:2px 8px;text-align:center;font-size:15px;font-weight:700;letter-spacing:1px;' +
       (g.combo >= 3 ? 'background:' + CRIM + ';color:' + CREAMT + ';border:2px solid #1b2040;' : 'visibility:hidden;'));
     txt(comboEl, g.combo >= 3 ? 'x' + g.combo + ' combo' : 'x0 combo');
-    const timeLeft = count ? 20 : g.time;
-    sty(barFill, 'display:block;height:100%;width:' + Math.max(0, Math.min(100, timeLeft / 20 * 100)).toFixed(1) + '%;background:' + CRIM + ';box-shadow:inset 0 -3px 0 #8f1f27;');
+    const timeLeft = count ? RUSH_SECONDS : g.time;
+    sty(barFill, 'display:block;height:100%;width:' + Math.max(0, Math.min(100, timeLeft / RUSH_SECONDS * 100)).toFixed(1) + '%;background:' + CRIM + ';box-shadow:inset 0 -3px 0 #8f1f27;');
     txt(timeEl, Math.ceil(timeLeft) + 's');
 
     const gparts: Part[] = [];
@@ -185,7 +201,7 @@ export function createRush(ctx: TrialCtx): TrialGame {
 
   const finish = () => {
     const sc = g.score;
-    const stars = sc >= 25 ? 5 : (sc >= 18 ? 4 : (sc >= 12 ? 3 : (sc >= 6 ? 2 : 1)));
+    const stars = rushStars(sc);
     log('[System] Five-Star Rush: score ' + sc + ' (' + '★'.repeat(stars) + ')');
     sfx('rate', stars);
     ctx.finish({ won: true, score: sc, stars, bonus: sc * 100 });
@@ -215,11 +231,11 @@ export function createRush(ctx: TrialCtx): TrialGame {
         g.cd -= dt;
         const n = Math.max(0, Math.ceil(g.cd));
         if (n !== g.cdn) { g.cdn = n; sfx(n > 0 ? 'beep' : 'go'); }
-        if (g.cd <= 0) { g.phase = 'play'; g.cd = 0; g.t = 0; g.time = 20; }
+        if (g.cd <= 0) { g.phase = 'play'; g.cd = 0; g.t = 0; g.time = RUSH_SECONDS; }
       } else {
         g.t += dt;
-        g.time = Math.max(0, 20 - g.t);
-        const p = Math.min(1, g.t / 20);
+        g.time = Math.max(0, RUSH_SECONDS - g.t);
+        const p = Math.min(1, g.t / RUSH_SECONDS);
         const v = 180 + 140 * p;
         g.spawn -= dt;
         if (g.spawn <= 0 && g.time > 0.3) {
@@ -240,7 +256,7 @@ export function createRush(ctx: TrialCtx): TrialGame {
       }
       g.pops.forEach((p) => { p.age += dt; });
       g.pops = g.pops.filter((p) => p.age < 0.8);
-      if (g.phase === 'play' && g.t >= 20) { finish(); return false; }
+      if (g.phase === 'play' && g.t >= RUSH_SECONDS) { finish(); return false; }
       render();
       return true;
     },
