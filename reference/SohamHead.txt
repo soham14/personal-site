@@ -1,0 +1,69 @@
+# PALETTE ('.' = transparent)
+k #17112a outline
+s #d4a07a skin base
+d #bf8a63 skin shade
+l #e2b892 skin highlight
+h #2b2340 hair base
+H #1f1930 hair dark / faded sides / brows
+L #4a3f66 hair highlight
+f #2e2a44 glasses frame
+e #1a1426 eye dark / lash
+i #3d2f5c iris
+g #ffffff eye glint
+m #8a4a3a mouth
+
+HEAD_BARE  # 24 cols x 22 rows
+.......kk.k..k...kk.....
+.....kkhhkhkkhkkkhhk....
+....khhLhhhhLhhhhhhhk...
+..kkhhhLhhhhhhhLhhhhhk..
+.khHhhhhLLhhhhhhhhhhHhk.
+.khhhhhhhhhLhhhhhhhhhhk.
+.kHhhhhhhhhhhhhhhhhHhHkk
+.kHHhhhhshhlhhHHHHHshhHH
+.kHHsHHHHHlllHsssssHHdkk
+.kHlssffffssssffffssdHk.
+.khlsfeeesfssfeeesfsddk.
+.kffsfgiisffffgiisfsffk.
+.kllsfiiisfssfiiisfsddk.
+.kllsfssssfssfssssfsddk.
+..kllsffffsddsffffsddk..
+...kllsssssdmmssssddk...
+....kllsmmmmsssdsddk....
+.....kddddddddddddk.....
+......kkddddddddkk......
+........kddddddk........
+........kddddddk........
+........kddddddk........
+
+HEAD_HATTED  # 24 cols x 22 rows
+# hat brim row index = 4 (rows 0-3 transparent; row 4 is the flat hair line the hat brim covers/sits on; overlay hat so its brim lands on row 4)
+........................
+........................
+........................
+..kkkkkkkkkkkkkkkkkkkk..
+.kHHHHHHHHHHHHHHHHHHHHk.
+.khhhhhhhhhLhhhhhhhhhhk.
+.kHhhhhhhhhhhhhhhhhHhHkk
+.kHHhhhhshhlhhHHHHHshhHH
+.kHHsHHHHHlllHsssssHHdkk
+.kHlssffffssssffffssdHk.
+.khlsfeeesfssfeeesfsddk.
+.kffsfgiisffffgiisfsffk.
+.kllsfiiisfssfiiisfsddk.
+.kllsfssssfssfssssfsddk.
+..kllsffffsddsffffsddk..
+...kllsssssdmmssssddk...
+....kllsmmmmsssdsddk....
+.....kddddddddddddk.....
+......kkddddddddkk......
+........kddddddk........
+........kddddddk........
+........kddddddk........
+
+NOTES
+- Face center column: between cols 11 and 12 (11.5). Glasses rings cols 5-10 and 13-18, bridge cols 11-12 at row 11; right brow raised (row 7), left brow row 8.
+- Neck attaches at row 19 (rows 19-21 = neck stub, cols 9-14, 6 wide); row 21 is the last row, it overlaps the scarf/collar (body scarf starts at body row 36).
+- Anchor in 36x56 body grid: head left col = 6, top row = 15 (so face center col = 17.5 = body center; chin row 18 -> body row 33, neck rows 34-36 tuck under scarf at body row 36). Archmage head ellipse spans cols 8-27, rows 16-37 -> shift top to 14 if you want chin at body row 32-35 like Archmage (jaw ~35); adjust one row to taste.
+- Draw order: body, head (BARE or HATTED), then hat on top (hat brim at head row 4 = body row 19 with top 15).
+- Mirror horizontally for facing-left (glasses/brow flip).
