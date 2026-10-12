@@ -38,11 +38,6 @@ jobs:
       - name: Unit tests with coverage
         id: tests
         run: npx vitest run --coverage --reporter=default --reporter=json --outputFile.json=test-results.json
-      - name: Worker benchmark (temporary)
-        if: always()
-        run: |
-          node -e "console.log('cpus', require('os').availableParallelism())" > bench.txt
-          for cfg in "--pool=forks --maxWorkers=4 --coverage" "--pool=threads --maxWorkers=4 --coverage" "--pool=threads --maxWorkers=4" "--pool=forks --maxWorkers=4" "--pool=threads --maxWorkers=4 --coverage --no-isolate"; do s=$(date +%s.%N); npx vitest run $cfg --minWorkers=1 --reporter=default > vt.txt 2>&1; rc=$?; e=$(date +%s.%N); echo "[$cfg] rc=$rc seconds=$(echo "$e - $s" | bc) | $(grep -E 'Duration|Tests ' vt.txt | tr '\n' ' ')" >> bench.txt; done
       - name: Publish test report
         if: always()
         run: |
