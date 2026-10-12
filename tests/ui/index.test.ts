@@ -563,7 +563,7 @@ describe('résumé overlay', () => {
     try {
       const t0 = vi.getTimerCount();
       window.dispatchEvent(new Event('load'));
-      expect({ calls: ric.mock.calls.length, t0, t1: vi.getTimerCount(), built: !!overlay(), ricType: typeof (window as any).requestIdleCallback, same: window === (globalThis as any), dv: document.defaultView === window, ricDv: typeof (document.defaultView as any).requestIdleCallback }).toEqual({ debug: 1 });
+      expect(JSON.stringify({ built: !!overlay(), ricType: typeof (window as any).requestIdleCallback, isRic: (window as any).requestIdleCallback === ric, same: window === (globalThis as any), dv: document.defaultView === window, ricDv: typeof (document.defaultView as any).requestIdleCallback, ricG: typeof (globalThis as any).requestIdleCallback, ael: window.addEventListener === (globalThis as any).addEventListener, desc: String(Object.getOwnPropertyDescriptor(globalThis, 'requestIdleCallback') && Object.keys(Object.getOwnPropertyDescriptor(globalThis, 'requestIdleCallback')!)), descW: String(Object.getOwnPropertyDescriptor(window, 'requestIdleCallback') && Object.keys(Object.getOwnPropertyDescriptor(window, 'requestIdleCallback')!)) })).toBe('debug');
       expect(ric).toHaveBeenCalled();
       expect(overlay().style.visibility).toBe('hidden');
       expect(fetchMock).toHaveBeenCalledTimes(1);
