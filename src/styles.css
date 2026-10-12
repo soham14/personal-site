@@ -35,6 +35,8 @@
    (--pz, set in main.ts from the window height) so they stay consistent; profile uses the full height. */
 @media (max-height: 600px) {
   #ui .cq-pop { zoom: var(--pz, 1); }
-  #ui .cq-modal, #ui .cq-reward { top: 8px !important; max-height: none !important; overflow: visible !important; }
+  #ui .cq-modal { top: 8px !important; max-height: none !important; overflow: visible !important; }
+  /* quest card: centered vertically, above the minimap/top bar, for its few seconds on screen */
+  #ui .cq-reward { top: 50% !important; translate: 0 -50%; z-index: 90 !important; }
   #ui .cq-profile { top: 6px !important; bottom: 6px !important; }
 }
