@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { STAGES, MAPS, MENTORS, TRIALS, WORLD, SKILLS, PORTAL } from '../src/content.ts';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -136,7 +137,7 @@ describe('skills', () => {
 });
 
 describe('résumé page matches content.ts', () => {
-  const html = readFileSync(new URL('../resume/index.html', import.meta.url), 'utf8');
+  const html = readFileSync(resolve(process.cwd(), 'resume/index.html'), 'utf8');
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const norm = (s: string | null) => (s || '').replace(/\s+/g, ' ').trim();
   const articles = Array.from(doc.querySelectorAll('article')).map((a) => norm(a.textContent));

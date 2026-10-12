@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { initAudio, resetAudio, toggleSound, setSoundFlags, sfx, musicWeights, noteFreq } from '../../src/audio/audio.ts';
 import { songs } from '../../src/audio/songs.ts';
 import { state, setState, emit, on } from '../../src/state.ts';
@@ -737,7 +738,7 @@ describe('page visibility', () => {
 });
 
 describe('sfx', () => {
-  const SRC = readFileSync(new URL('../../src/audio/audio.ts', import.meta.url), 'utf8');
+  const SRC = readFileSync(resolve(process.cwd(), 'src/audio/audio.ts'), 'utf8');
   const body = SRC.slice(SRC.indexOf('export function sfx('), SRC.indexOf('export function resetAudio('));
   const NAMES = [...body.matchAll(/case '(\w+)'/g)].map((m) => m[1]);
   const fxOn = () => setSoundFlags(false, true);
