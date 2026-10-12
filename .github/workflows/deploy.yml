@@ -42,7 +42,7 @@ jobs:
         if: always()
         run: |
           node -e "console.log('cpus', require('os').availableParallelism())" > bench.txt
-          for w in 1 2 4 8; do s=$(date +%s.%N); npx vitest run --coverage --maxWorkers=$w --minWorkers=1 --reporter=dot > /dev/null 2>&1; e=$(date +%s.%N); echo "workers=$w seconds=$(echo "$e - $s" | bc)" >> bench.txt; done
+          for w in 1 2 4 8; do s=$(date +%s.%N); npx vitest run --coverage --maxWorkers=$w --minWorkers=1 --reporter=default > vt-$w.txt 2>&1; e=$(date +%s.%N); echo "workers=$w seconds=$(echo "$e - $s" | bc) | $(grep -E 'Duration' vt-$w.txt | tail -1)" >> bench.txt; done
       - name: Publish test report
         if: always()
         run: |
