@@ -561,7 +561,9 @@ describe('résumé overlay', () => {
     const hosts = [globalThis, window, document.defaultView] as any[];
     hosts.forEach((h) => { h.requestIdleCallback = ric; });
     try {
+      const t0 = vi.getTimerCount();
       window.dispatchEvent(new Event('load'));
+      expect({ calls: ric.mock.calls.length, t0, t1: vi.getTimerCount(), built: !!overlay(), ricType: typeof (window as any).requestIdleCallback, same: window === (globalThis as any), dv: document.defaultView === window, ricDv: typeof (document.defaultView as any).requestIdleCallback }).toEqual({ debug: 1 });
       expect(ric).toHaveBeenCalled();
       expect(overlay().style.visibility).toBe('hidden');
       expect(fetchMock).toHaveBeenCalledTimes(1);
