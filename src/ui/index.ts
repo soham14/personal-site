@@ -182,7 +182,7 @@ function talkHTML(): string {
     : `<button type="button" data-act="next" style="min-height:44px;padding:0 14px;${FP}font-size:16px;font-weight:700;color:${ACC};background:#2a3166;border:3px solid #1b2040;border-radius:0;cursor:pointer;box-shadow:inset 2px 2px 0 #3d4691,3px 3px 0 #1b2040;">${ti === 3 ? 'To the portal ▸' : 'Next mentor ▸'}</button>`) +
     (showReplay ? `<button type="button" data-act="play" data-kind="${kind}" style="min-height:44px;padding:0 14px;${FP}font-size:16px;font-weight:700;border:3px solid #1b2040;border-radius:0;cursor:pointer;${REPLAY_STYLE[ti]}">Play ${esc(TRIALS[kind].name)}</button>` : '') +
     `<button type="button" data-act="endChat" style="min-height:44px;padding:0 14px;${FP}font-size:16px;font-weight:700;color:#1b2040;background:#e6e0cd;border:3px solid #1b2040;border-radius:0;cursor:pointer;box-shadow:inset 2px 2px 0 #fff,3px 3px 0 #1b2040;">End chat</button>`;
-  return `<div role="dialog" aria-label="NPC dialogue" data-no-walk="1" class="cq-modal" style="position:absolute;left:0;right:0;margin:0 auto;top:116px;max-height:calc(100% - 128px);overflow-y:auto;z-index:20;width:min(560px,94%);box-sizing:border-box;background:#f4f1e8;border:3px solid #1b2040;box-shadow:inset 2px 2px 0 #fff,inset -2px -2px 0 #cfc8b2,5px 5px 0 #000;color:#1b2040;">
+  return `<div role="dialog" aria-label="NPC dialogue" data-no-walk="1" class="cq-modal cq-pop" style="position:absolute;left:0;right:0;margin:0 auto;top:116px;max-height:calc(100% - 128px);overflow-y:auto;z-index:20;width:min(560px,94%);box-sizing:border-box;background:#f4f1e8;border:3px solid #1b2040;box-shadow:inset 2px 2px 0 #fff,inset -2px -2px 0 #cfc8b2,5px 5px 0 #000;color:#1b2040;">
   <div style="display:flex;align-items:center;justify-content:space-between;min-height:44px;padding-left:14px;background:${dm.bar};border-bottom:3px solid #1b2040;color:${dm.barTx};${FP}font-size:17px;font-weight:700;letter-spacing:2px;">
     <span>${esc(name)}</span>
     <button type="button" aria-label="Close" data-act="endChat" style="width:44px;height:44px;padding:0;border:0;border-left:3px solid #1b2040;background:#1b2040;cursor:pointer;display:flex;align-items:center;justify-content:center;">${CLOSE_X(dm.barTx)}</button>
@@ -249,7 +249,7 @@ function showReward(idx: number, bonus: number): void {
   const c = STAGES[i];
   const m = MAPS[Math.max(0, Math.min(3, state.zone))];
 
-  const n = el(`<div role="status" style="position:absolute;left:0;right:0;margin:0 auto;top:126px;z-index:14;width:min(500px,94%);box-sizing:border-box;pointer-events:none;animation:cardin 0.5s ease-out both;">
+  const n = el(`<div role="status" class="cq-pop cq-reward" style="position:absolute;left:0;right:0;margin:0 auto;top:126px;z-index:14;width:min(500px,94%);box-sizing:border-box;pointer-events:none;animation:cardin 0.5s ease-out both;">
   <div aria-hidden="true" data-fade style="position:absolute;inset:0;background:#f4f1e8;border:3px solid ${m.bar};box-shadow:inset 2px 2px 0 #fff,inset -2px -2px 0 #cfc8b2,5px 5px 0 #000;"></div>
   <div data-fade style="position:relative;display:flex;align-items:center;min-height:36px;padding:0 14px;background:${m.bar};border-bottom:3px solid #1b2040;color:${m.barTx};${FP}font-size:16px;font-weight:700;letter-spacing:3px;">QUEST COMPLETE</div>
   <div style="position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;padding:14px;color:#1b2040;">
@@ -303,7 +303,11 @@ function syncTitleChip(): void {
 function render(): void {
   patch(slots.top, topHTML());
   const dot = slots.top.querySelector('[data-mini-dot]') as HTMLElement | null;
-  if (dot) dot.style.left = 'calc(' + Math.max(0, Math.min(100, state.px / WORLD_W * 100)).toFixed(2) + '% - 5px)';
+  if (dot) {
+    dot.style.left = 'calc(' + Math.max(0, Math.min(100, state.px / WORLD_W * 100)).toFixed(2) + '% - 5px)';
+    // same vertical scale as the platform marks (ground line at 18px, 230 world px = 26 map px)
+    dot.style.bottom = (18 + Math.round(Math.max(0, state.py) / 230 * 26)) + 'px';
+  }
   patch(slots.legend, legendHTML());
   patch(slots.hint, hintHTML());
   patch(slots.talk, talkHTML());

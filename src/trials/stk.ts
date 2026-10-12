@@ -20,7 +20,7 @@ export function createStk(ctx: TrialCtx): TrialGame {
 
   const P = palette('stk');
   const root = el('div');
-  root.setAttribute('role', 'dialog');
+  root.setAttribute('role', 'dialog'); root.classList.add('cq-pop');
   root.setAttribute('aria-label', 'Keep Leveling');
   root.appendChild(titleBar(P, 'KEEP LEVELING', 'Quit Keep Leveling', ctx.close, '#0f1015'));
   const area = el('div');

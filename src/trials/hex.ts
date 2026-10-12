@@ -85,7 +85,7 @@ export function createHex(ctx: TrialCtx): TrialGame {
 
   // ---- skeleton: an open spellbook ----
   const root = el('div');
-  root.setAttribute('role', 'dialog');
+  root.setAttribute('role', 'dialog'); root.classList.add('cq-pop');
   root.setAttribute('aria-label', 'Final exam: Hex Lock');
   const bar = el('div', 'display:flex;align-items:center;justify-content:space-between;min-height:44px;padding:0 0 0 16px;margin:3px 3px 0;color:#f2b632;' + fontP + 'font-size:17px;font-weight:700;letter-spacing:2px;');
   bar.append(el('span', '', 'FINAL EXAM · HEX LOCK'), closeButton('Quit Hex Lock', '#0f1f3d', '#f2b632', ctx.close));

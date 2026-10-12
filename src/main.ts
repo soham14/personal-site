@@ -22,21 +22,13 @@ document.addEventListener('click', (e) => {
   }, 0);
 });
 
-// Short screens (phone landscape): shrink the NPC dialogue and trial windows to fit the viewport
-// instead of cutting them off. Profile and résumé scroll by design, so they're left alone.
-function fitDialogs() {
-  const avail = window.innerHeight - 16;
-  document.querySelectorAll<HTMLElement>('#ui [role="dialog"]').forEach((d) => {
-    const label = d.getAttribute('aria-label') || '';
-    if (label === 'Character info' || label === 'Résumé') return;
-    d.style.zoom = '1';
-    const h = d.getBoundingClientRect().height;
-    const z = h > avail ? Math.max(0.5, avail / h) : 1;
-    d.style.zoom = z < 1 ? String(Math.floor(z * 100) / 100) : '';
-  });
+// Short screens (phone landscape): one shared scale for all pop-ups, sized so the tallest (Keep Leveling, ~520px) fits.
+function setPopScale() {
+  const z = Math.min(1, (window.innerHeight - 16) / 530);
+  document.documentElement.style.setProperty('--pz', String(Math.floor(z * 100) / 100));
 }
-setInterval(fitDialogs, 250);
-window.addEventListener('resize', fitDialogs);
+setPopScale();
+window.addEventListener('resize', setPopScale);
 
 new Phaser.Game({
   type: Phaser.AUTO,

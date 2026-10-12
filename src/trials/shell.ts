@@ -36,6 +36,7 @@ export function titleBar(P: Pal, title: string, closeAria: string, onClose: () =
 /** Standard cream trial window (fr.win). */
 export function stdWindow(P: Pal, aria: string, title: string, closeAria: string, onClose: () => void): HTMLElement {
   const w = el('div', WIN);
+  w.classList.add('cq-pop');
   w.setAttribute('role', 'dialog');
   w.setAttribute('aria-label', aria);
   w.appendChild(titleBar(P, title, closeAria, onClose));

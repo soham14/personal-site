@@ -31,7 +31,10 @@
 .cq-resume{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;background:#f6f3ea;pointer-events:auto}
 .cq-resume iframe{flex:1 1 auto;width:100%;border:0;background:#f6f3ea}
 
-/* Phone landscape: short screens. Dialogue box uses the full height; the fitter in main.ts shrinks it to fit. */
-@media (max-height: 520px) {
-  #ui .cq-modal { top: 8px !important; max-height: none !important; overflow: visible !important; }
+/* Short screens (phone landscape): every pop-up (dialogue, trial, quest card) shrinks by the SAME factor
+   (--pz, set in main.ts from the window height) so they stay consistent; profile uses the full height. */
+@media (max-height: 600px) {
+  #ui .cq-pop { zoom: var(--pz, 1); }
+  #ui .cq-modal, #ui .cq-reward { top: 8px !important; max-height: none !important; overflow: visible !important; }
+  #ui .cq-profile { top: 6px !important; bottom: 6px !important; }
 }
