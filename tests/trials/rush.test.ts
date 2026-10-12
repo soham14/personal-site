@@ -163,13 +163,15 @@ describe('createRush keyboard', () => {
     expect(scoreWith([['star', CENTER]], hold)).toBe(0);
   });
 
-  it('releasing a key stops moving that way', () => {
-    const score = scoreWith([['star', LEFT]], ({ game }) => {
-      game.key(keydown('ArrowRight'), true);
+  it.each([
+    ['ArrowRight', 'ArrowLeft', LEFT], ['KeyA', 'KeyD', RIGHT]
+  ])('releasing %s stops moving that way (then %s takes over)', (first, second, side) => {
+    const score = scoreWith([['star', side]], ({ game }) => {
+      game.key(keydown(first), true);
       run(game, 0.2);
-      game.keyUp!(keyup('ArrowRight'));
+      game.keyUp!(keyup(first));
       game.keyUp!(keyup('KeyX'));
-      game.key(keydown('ArrowLeft'), true);
+      game.key(keydown(second), true);
     });
     expect(score).toBeGreaterThan(0);
   });
@@ -207,12 +209,14 @@ describe('createRush pointer', () => {
     expect(score).toBeGreaterThan(0);
   });
 
-  it('sliding a held pointer across the middle switches direction, also mid-round', () => {
-    const score = scoreWith([['star', RIGHT]], ({ game, area }) => {
+  it.each([
+    [LEFT_HALF, RIGHT_HALF, RIGHT], [RIGHT_HALF, LEFT_HALF, LEFT]
+  ])('sliding a held pointer across the middle (x %i to %i) switches direction, also mid-round', (from, to, side) => {
+    const score = scoreWith([['star', side]], ({ game, area }) => {
       measured(area);
       run(game, RUSH_SECONDS / 4);
-      pointer(area, 'pointerdown', LEFT_HALF);
-      pointer(area, 'pointermove', RIGHT_HALF);
+      pointer(area, 'pointerdown', from);
+      pointer(area, 'pointermove', to);
     });
     expect(score).toBeGreaterThan(0);
   });
