@@ -1,6 +1,6 @@
 // Cache-first app shell. Bump VERSION to invalidate.
 const VERSION = 'cq-v1';
-const SHELL = ['/', '/index.html', '/resume/', '/favicon.svg', '/manifest.webmanifest'];
+const SHELL = ['./', './index.html', './resume/', './favicon.svg', './manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -33,7 +33,7 @@ self.addEventListener('fetch', (e) => {
           caches.open(VERSION).then((c) => c.put(req, copy));
         }
         return res;
-      }).catch(() => (req.mode === 'navigate' ? caches.match('/') : Response.error()));
+      }).catch(() => (req.mode === 'navigate' ? caches.match('./') : Response.error()));
     })
   );
 });

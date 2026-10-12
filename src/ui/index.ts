@@ -182,7 +182,7 @@ function syncResume(): void {
   <div style="flex:none;display:flex;justify-content:flex-start;padding:12px 16px;background:#f6f3ea;border-bottom:2px solid #c9c2ad;">
     <button type="button" data-act="closeResume" style="display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;box-sizing:border-box;${FP}font-size:15px;font-weight:700;color:#ffd166;background:#1b2040;border:3px solid #1b2040;border-radius:0;cursor:pointer;box-shadow:3px 3px 0 #ffd166;">&#9664; Back to the game</button>
   </div>
-  <iframe title="Résumé" src="/resume/?embedded=1"></iframe>
+  <iframe title="Résumé" src="resume/?embedded=1"></iframe>
 </div>`));
   (slot.querySelector('[data-act="closeResume"]') as HTMLElement).focus();
 }
