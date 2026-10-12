@@ -1,0 +1,49 @@
+TYPECHECK:
+ok
+TESTS: 684 passed, 0 failed, 684 total
+FILE DURATIONS (ms, tests):
+    2493     9  tests/trials/rush.pointer.test.ts
+    2133    11  tests/trials/rush.scoring.test.ts
+    1820     7  tests/trials/rush.keyboard.test.ts
+    1781    29  tests/ui/index.hud.test.ts
+    1424    33  tests/ui/index.overlays.test.ts
+    1231    16  tests/trials/lan.test.ts
+     989    24  tests/ui/profile.test.ts
+     947    23  tests/trials/hex.test.ts
+     896    29  tests/render/back.test.ts
+     750    29  tests/trials/stk.test.ts
+     366    57  tests/trials/index.test.ts
+     317    86  tests/game/input.test.ts
+     317    98  tests/audio/audio.test.ts
+     219     9  tests/audio/songs.test.ts
+     151    64  tests/game/sim.test.ts
+      54     6  tests/ui/crests.test.ts
+      51     7  tests/trials/shell.test.ts
+      43    77  tests/render/css.test.ts
+      42    18  tests/trials/dom.test.ts
+      25     7  tests/app.test.ts
+      18    19  tests/content.test.ts
+      13    11  tests/ui/util.test.ts
+      13    15  tests/state.test.ts
+
+COVERAGE (uncovered lines/branches/functions per file):
+src/app.ts: statements 19/19
+src/content.ts: statements 96/96
+src/state.ts: statements 39/39
+src/audio/audio.ts: statements 472/472
+src/game/input.ts: statements 197/197
+src/game/sim.ts: statements 303/303
+src/render/back.ts: statements 91/91
+src/render/css.ts: statements 344/344
+src/trials/dom.ts: statements 61/61
+src/trials/hex.ts: statements 304/304
+src/trials/index.ts: statements 190/190
+src/trials/lan.ts: statements 228/228
+src/trials/rush.ts: statements 245/245
+src/trials/shell.ts: statements 32/32
+src/trials/stk.ts: statements 210/210
+src/trials/types.ts: statements 0/0
+src/ui/crests.ts: statements 82/82
+src/ui/index.ts: statements 337/337
+src/ui/profile.ts: statements 157/157
+src/ui/util.ts: statements 19/19
