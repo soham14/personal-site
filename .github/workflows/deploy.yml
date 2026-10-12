@@ -1,22 +1,45 @@
-name: Deploy to GitHub Pages
+name: Test and deploy
 
-# Push trigger is enabled once the app builds; manual runs only for now.
 on:
   push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # publishes the plain-text test report to a ci-report/<branch> branch
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: npx tsc --noEmit
+      - name: Unit tests with coverage
+        id: tests
+        run: npx vitest run --coverage --reporter=default --reporter=json --outputFile.json=test-results.json
+      - name: Publish test report
+        if: always()
+        run: |
+          node tools/test-report.mjs || true
+          BR="ci-report/${GITHUB_REF_NAME}"
+          git config user.name "ci" && git config user.email "ci@users.noreply.github.com"
+          cp ci-report.txt /tmp/ci-report.txt
+          git checkout --orphan report-tmp && git rm -rfq . >/dev/null && cp /tmp/ci-report.txt ci-report.txt
+          echo "${GITHUB_SHA}" > sha.txt && git add ci-report.txt sha.txt && git commit -qm "report ${GITHUB_SHA}"
+          git push -fq origin "HEAD:refs/heads/${BR}"
+
   build:
+    needs: test
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,9 +51,14 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+
   deploy:
     needs: build
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

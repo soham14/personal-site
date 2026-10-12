@@ -30,7 +30,8 @@ export interface GameState {
   musicOn: boolean; sfxOn: boolean; soundNA: boolean;
 }
 
-export const state: GameState = {
+function initialState(): GameState {
+  return {
   px: 80, py: 0, vy: 0, facing: 1,
   moving: false, hmove: false, air: false, climb: false, climbMoving: false,
   zone: 0, bz: 0, blend: { cur: 0, nxt: 0, t: 0 }, maxTier: 0, earnedN: 0, near: -1,
@@ -38,7 +39,10 @@ export const state: GameState = {
   titles: [], best: { hex: 0, lan: 0, rush: 0, stk: 0 }, expBonus: 0, profileAlert: false,
   isTouch: false, focused: false, legendDone: false, half: null,
   musicOn: false, sfxOn: false, soundNA: false
-};
+  };
+}
+
+export const state: GameState = initialState();
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -85,4 +89,12 @@ export function on(name: EventName, fn: Handler): () => void {
 }
 export function emit(name: EventName, payload: any = {}): void {
   handlers.get(name)?.forEach((fn) => fn(payload));
+}
+
+/** Restore the initial state and drop all listeners/handlers (used by tests and a fresh start). */
+export function resetState(): void {
+  for (const k of Object.keys(state)) delete (state as any)[k];
+  Object.assign(state, initialState());
+  listeners.clear();
+  handlers.clear();
 }
