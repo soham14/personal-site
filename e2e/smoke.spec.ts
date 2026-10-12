@@ -93,7 +93,7 @@ test.describe('keyboard (desktop)', () => {
     await page.keyboard.press('ArrowUp');
     const d = page.getByRole('dialog', { name: 'NPC dialogue' });
     await expect(d).toContainText(MENTORS[0].name);
-    await d.locator('[data-act="endChat"]').click();
+    await d.locator('button', { hasText: 'End chat' }).click();
     await expect(d).toBeHidden();
   });
 
@@ -105,7 +105,7 @@ test.describe('keyboard (desktop)', () => {
     const trial = page.getByRole('dialog', { name: `Trial from ${MENTORS[TRIALS.hex.mentor].name}` });
     await expect(trial).toBeVisible({ timeout: 5000 });
     await page.keyboard.up('ArrowRight');
-    await trial.getByRole('button', { name: 'Skip trial' }).click();
+    await trial.locator('button', { hasText: 'Skip trial' }).click();
     await expect(trial).toBeHidden();
     await page.keyboard.down('ArrowRight'); await page.waitForTimeout(2500); await page.keyboard.up('ArrowRight');
     await expect(page.getByText('JOB ADVANCED!')).toBeVisible({ timeout: 5000 });
@@ -119,7 +119,7 @@ for (const kind of Object.keys(TRIALS) as (keyof typeof TRIALS)[]) {
     await page.evaluate((k) => (window as any).__cq.emit('trialOffer', { kind: k, gate: false }), kind);
     const prompt = page.getByRole('dialog', { name: `Trial from ${MENTORS[TRIALS[kind].mentor].name}` });
     await expect(prompt).toBeVisible();
-    await prompt.getByRole('button', { name: 'Start trial' }).click();
+    await prompt.locator('button', { hasText: 'Start trial' }).click();
     await expect(prompt).toBeHidden();
     await expect.poll(() => page.evaluate(() => (window as any).__cq.state.trial?.phase)).toBe('play');
     await page.keyboard.press('Escape');
@@ -152,9 +152,11 @@ test.describe('touch (phones)', () => {
     const d = page.getByRole('dialog', { name: 'NPC dialogue' });
     await expect(d).toBeVisible();
     const box = (await d.boundingBox())!;
+    const diag = await d.evaluate((e) => ({ pz: getComputedStyle(document.documentElement).getPropertyValue('--pz'), zoom: getComputedStyle(e).zoom, ih: innerHeight, rectH: e.getBoundingClientRect().height, offH: (e as HTMLElement).offsetHeight }));
+    console.log('landscape diag', JSON.stringify(diag), JSON.stringify(box));
     expect(box.y).toBeGreaterThanOrEqual(0);
     expect(box.y + box.height).toBeLessThanOrEqual(portrait.width + 1);
-    await d.locator('[data-act="endChat"]').click();
+    await d.locator('button', { hasText: 'End chat' }).click();
 
     await page.setViewportSize(portrait);
     await page.locator('[data-act="resume"]').click();

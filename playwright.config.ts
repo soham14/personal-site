@@ -4,7 +4,10 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
-  workers: process.env.CI ? 4 : undefined,
+  // CI browsers draw the game in software (no GPU), so keep parallel browsers modest and allow slower frames.
+  workers: process.env.CI ? 2 : undefined,
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
   retries: process.env.CI ? 1 : 0,
   reporter: [['list'], ['json', { outputFile: 'e2e-results.json' }]],
   use: { baseURL: 'http://localhost:4173/', trace: 'off' },
