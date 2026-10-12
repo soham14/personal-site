@@ -1,0 +1,25 @@
+TYPECHECK:
+ok
+TESTS: 684 passed, 0 failed, 684 total
+
+COVERAGE (uncovered lines/branches/functions per file):
+src/app.ts: statements 19/19
+src/content.ts: statements 96/96
+src/state.ts: statements 39/39
+src/audio/audio.ts: statements 472/472
+src/game/input.ts: statements 197/197
+src/game/sim.ts: statements 303/303
+src/render/back.ts: statements 91/91
+src/render/css.ts: statements 344/344
+src/trials/dom.ts: statements 61/61
+src/trials/hex.ts: statements 304/304
+src/trials/index.ts: statements 190/190
+src/trials/lan.ts: statements 228/228
+src/trials/rush.ts: statements 245/245
+src/trials/shell.ts: statements 32/32
+src/trials/stk.ts: statements 210/210
+src/trials/types.ts: statements 0/0
+src/ui/crests.ts: statements 82/82
+src/ui/index.ts: statements 337/337
+src/ui/profile.ts: statements 157/157
+src/ui/util.ts: statements 19/19
