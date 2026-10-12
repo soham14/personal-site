@@ -23,5 +23,6 @@ try {
       (fns.length ? `\n  uncovered functions: ${fns.join(', ')}` : '') + (br.length ? `\n  uncovered branches (line#arm): ${br.join(',')}` : ''));
   }
 } catch (e) { out.push('no coverage: ' + e.message); }
+try { const t = fs.readFileSync('typecheck.txt', 'utf8').trim(); out.unshift('TYPECHECK:\n' + (t.includes('error TS') ? t.split('\n').filter((l) => l.includes('error TS')).slice(0, 80).join('\n') : 'ok')); } catch {}
 fs.writeFileSync('ci-report.txt', out.join('\n') + '\n');
 console.log(out.join('\n'));

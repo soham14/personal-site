@@ -12,6 +12,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - name: Type-check app and tests
+        run: npm run typecheck
+
   test:
     runs-on: ubuntu-latest
     permissions:
@@ -22,7 +33,8 @@ jobs:
         with:
           node-version: 20
       - run: npm install --no-audit --no-fund
-      - run: npx tsc --noEmit
+      - name: Type-check output for the report (the typecheck job is the actual gate)
+        run: npm run typecheck > typecheck.txt 2>&1 || true
       - name: Unit tests with coverage
         id: tests
         run: npx vitest run --coverage --reporter=default --reporter=json --outputFile.json=test-results.json
@@ -38,7 +50,7 @@ jobs:
           git push -fq origin "HEAD:refs/heads/${BR}"
 
   build:
-    needs: test
+    needs: [typecheck, test]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:

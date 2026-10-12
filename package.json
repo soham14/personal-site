@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json"
   },
   "dependencies": {
     "phaser": "3.90.0",
@@ -20,6 +21,7 @@
     "vite": "^5.4.11",
     "vitest": "2.1.9",
     "@vitest/coverage-v8": "2.1.9",
-    "jsdom": "25.0.1"
+    "jsdom": "25.0.1",
+    "@types/node": "^20.17.0"
   }
 }
