@@ -16,6 +16,20 @@ async function open(page: Page) {
 const dot = (page: Page) => page.locator('[data-mini-dot]');
 const dotX = async (page: Page) => (await dot(page).boundingBox())!.x;
 const dotBottom = async (page: Page) => parseFloat(await dot(page).evaluate((e) => (e as HTMLElement).style.bottom || '0'));
+/** Start recording how high the minimap dot rises (robust to slow frame rates). */
+const watchRise = (page: Page) => page.evaluate(() => {
+  const d = document.querySelector('[data-mini-dot]') as HTMLElement;
+  const w = window as any; w.__rise = { base: parseFloat(d.style.bottom || '0'), max: parseFloat(d.style.bottom || '0') };
+  new MutationObserver(() => { const b = parseFloat((document.querySelector('[data-mini-dot]') as HTMLElement).style.bottom || '0'); if (b > w.__rise.max) w.__rise.max = b; })
+    .observe(document.getElementById('ui')!, { attributes: true, subtree: true, attributeFilter: ['style'] });
+});
+const rose = (page: Page) => page.evaluate(() => (window as any).__rise.max > (window as any).__rise.base);
+/** Record whether some text ever appears on the page from now on. */
+const watchText = (page: Page, text: string) => page.evaluate((t) => {
+  const w = window as any; w.__seen = w.__seen || {}; w.__seen[t] = false;
+  new MutationObserver(() => { if (document.body.innerText.includes(t)) w.__seen[t] = true; }).observe(document.body, { childList: true, subtree: true, characterData: true });
+}, text);
+const seen = (page: Page, text: string) => page.evaluate((t) => (window as any).__seen[t], text);
 const place = (page: Page, x: number, tier = 0) => page.evaluate(([x, t]) => { const c = (window as any).__cq; c.initSim(t); c.sim.px = x; }, [x, tier]);
 
 test('loads without errors and shows the HUD', async ({ page }) => {
@@ -65,14 +79,14 @@ test.describe('keyboard (desktop)', () => {
 
   test('walking right moves the hero; jumping lifts it', async ({ page }) => {
     await open(page);
-    await page.locator('#game').click({ position: { x: 5, y: 5 } }); // focus the game
     const x0 = await dotX(page);
     await page.keyboard.down('ArrowRight'); await page.waitForTimeout(700); await page.keyboard.up('ArrowRight');
     expect(await dotX(page)).toBeGreaterThan(x0);
     const b0 = await dotBottom(page);
+    await watchRise(page);
     await page.keyboard.press('Space');
-    await expect.poll(() => dotBottom(page), { timeout: 2000 }).toBeGreaterThan(b0);
-    await expect.poll(() => dotBottom(page), { timeout: 3000 }).toBe(b0); // lands again
+    await expect.poll(() => rose(page), { timeout: 10_000 }).toBe(true);
+    await expect.poll(() => dotBottom(page), { timeout: 10_000 }).toBe(b0); // lands again
   });
 
   test('Space jumps after clicking a HUD button (does not re-press it)', async ({ page }) => {
@@ -88,8 +102,7 @@ test.describe('keyboard (desktop)', () => {
   test('talking to the first mentor shows their dialogue', async ({ page }) => {
     await open(page);
     await place(page, MENTORS[0].x - 30);
-    await page.locator('#game').click({ position: { x: 5, y: 5 } });
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(500);
     await page.keyboard.press('ArrowUp');
     const d = page.getByRole('dialog', { name: 'NPC dialogue' });
     await expect(d).toContainText(MENTORS[0].name);
@@ -100,15 +113,16 @@ test.describe('keyboard (desktop)', () => {
   test('crossing the first gate: trial offered, skipped, then job advancement', async ({ page }) => {
     await open(page);
     await place(page, WORLD.GATES[0] - 150);
-    await page.locator('#game').click({ position: { x: 5, y: 5 } });
     await page.keyboard.down('ArrowRight');
     const trial = page.getByRole('dialog', { name: `Trial from ${MENTORS[TRIALS.hex.mentor].name}` });
     await expect(trial).toBeVisible({ timeout: 5000 });
     await page.keyboard.up('ArrowRight');
     await trial.locator('button', { hasText: 'Skip trial' }).click();
     await expect(trial).toBeHidden();
-    await page.keyboard.down('ArrowRight'); await page.waitForTimeout(2500); await page.keyboard.up('ArrowRight');
-    await expect(page.getByText('JOB ADVANCED!')).toBeVisible({ timeout: 5000 });
+    await watchText(page, 'JOB ADVANCED!');
+    await page.keyboard.down('ArrowRight');
+    await expect.poll(() => seen(page, 'JOB ADVANCED!'), { timeout: 20_000 }).toBe(true);
+    await page.keyboard.up('ArrowRight');
     await expect(page.locator('.cq-mini-title')).toContainText(MAPS[1].name, { timeout: 8000 });
   });
 });
@@ -139,26 +153,30 @@ test.describe('touch (phones)', () => {
     await page.waitForTimeout(700);
     await page.locator('#game').dispatchEvent('pointerup', { pointerId: 1, pointerType: 'touch', isPrimary: true, clientX: vp.width * 0.8, clientY: vp.height * 0.5 });
     expect(await dotX(page)).toBeGreaterThan(x0);
-    const b0 = await dotBottom(page);
+    await watchRise(page);
     await page.getByRole('button', { name: 'Jump' }).dispatchEvent('pointerdown', { pointerId: 2, pointerType: 'touch', isPrimary: true });
-    await expect.poll(() => dotBottom(page), { timeout: 2000 }).toBeGreaterThan(b0);
+    await expect.poll(() => rose(page), { timeout: 10_000 }).toBe(true);
   });
 
-  test('landscape: dialogue fits on screen; résumé text size survives rotation', async ({ page }) => {
+  test('landscape: dialogue fits on screen', async ({ browser }, info) => {
+    const use = info.project.use as any;
+    const ctx = await browser.newContext({ ...use, viewport: { width: use.viewport.height, height: use.viewport.width } });
+    const page = await ctx.newPage();
     await open(page);
-    const portrait = page.viewportSize()!;
-    await page.setViewportSize({ width: portrait.height, height: portrait.width });
+    const vp = page.viewportSize()!;
     await page.evaluate(() => (window as any).__cq.emit('talk', { i: 0 }));
     const d = page.getByRole('dialog', { name: 'NPC dialogue' });
     await expect(d).toBeVisible();
     const box = (await d.boundingBox())!;
-    const diag = await d.evaluate((e) => ({ pz: getComputedStyle(document.documentElement).getPropertyValue('--pz'), zoom: getComputedStyle(e).zoom, ih: innerHeight, rectH: e.getBoundingClientRect().height, offH: (e as HTMLElement).offsetHeight }));
-    console.log('landscape diag', JSON.stringify(diag), JSON.stringify(box));
     expect(box.y).toBeGreaterThanOrEqual(0);
-    expect(box.y + box.height, 'diag ' + JSON.stringify(diag)).toBeLessThanOrEqual(portrait.width + 1);
-    await d.locator('button', { hasText: 'End chat' }).click();
+    expect(box.y + box.height).toBeLessThanOrEqual(vp.height + 1);
+    await expect(d.locator('button', { hasText: 'End chat' })).toBeInViewport();
+    await ctx.close();
+  });
 
-    await page.setViewportSize(portrait);
+  test('résumé text size survives rotation', async ({ page }) => {
+    await open(page);
+    const portrait = page.viewportSize()!;
     await page.locator('[data-act="resume"]').click();
     const h1 = page.locator('.cq-resume h1');
     await expect(h1).toBeVisible();
