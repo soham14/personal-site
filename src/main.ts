@@ -12,6 +12,16 @@ initTrials(ui);
 initAudio();
 on('soundToggle' as any, () => toggleSound());
 
+// After a mouse/touch click on a button, drop its focus so Space jumps instead of re-pressing it.
+// Keyboard activation (detail === 0) keeps focus for accessibility.
+document.addEventListener('click', (e) => {
+  if (e.detail === 0) return;
+  setTimeout(() => {
+    const a = document.activeElement as HTMLElement | null;
+    if (a && a.closest('button, a') && !a.closest('[role="dialog"]')) a.blur();
+  }, 0);
+});
+
 new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',

@@ -96,11 +96,11 @@ const RATE: Record<TrialKind, (v: number) => string> = {
 
 // Achievement copy is from the approved mockup (not yet in content.ts).
 const ACHIEVEMENTS = [
-  { title: 'Golden Bear Graduate', desc: 'Finished the academy at UC Berkeley.', on: true, now: false },
-  { title: 'First Production Deploy', desc: 'The first spell cast for real users, with the SAP guild.', on: true, now: false },
-  { title: 'Mentored a New Mage', desc: 'Helped someone newer find their footing at Yelp.', on: true, now: false },
-  { title: 'Reached Archmage', desc: 'Became a Senior Software Engineer with the Roblox guild.', on: true, now: true },
-  { title: '???', desc: 'Behind the sealed gate.', on: false, now: false }
+  { title: 'Golden Bear Graduate', desc: 'Finished the academy at UC Berkeley.', on: true, now: false, crest: 0 },
+  { title: 'Led a Cross-Org Feature', desc: 'Led the creation of a large, cross-organizational feature with the Roblox guild.', on: true, now: false, crest: 3 },
+  { title: 'Managed a New Mage', desc: 'Managed and mentored an intern with the Roblox guild.', on: true, now: false, crest: 3 },
+  { title: 'Reached Archmage', desc: 'Became a Senior Software Engineer with the Roblox guild.', on: true, now: true, crest: 3 },
+  { title: '???', desc: 'Behind the sealed gate.', on: false, now: false, crest: 4 }
 ];
 
 function trophies(): string {
@@ -141,7 +141,7 @@ function trophies(): string {
   const bOn = 'background:#1b2040;color:' + ACC + ';border:2px solid #1b2040;';
   const bOff = 'background:transparent;color:#3d3947;border:2px dashed #5a5560;';
   const ach = ACHIEVEMENTS.map((a) => `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 12px;${a.on ? (a.now ? tNow : tOn) : tOff}">
-      <div aria-hidden="true" style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;${FP}font-size:12px;font-weight:700;letter-spacing:1px;${a.on ? bOn : bOff}">${a.on ? 'OK' : 'LOCK'}</div>
+      <div aria-hidden="true" style="flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;${FP}font-size:12px;font-weight:700;letter-spacing:1px;${a.on ? '' : bOff}">${a.on ? `<img alt="" src="${crestDataURL(a.crest, false)}" width="40" height="40" style="display:block;image-rendering:pixelated;">` : 'LOCK'}</div>
       <div style="flex:1 1 160px;min-width:0;"><div style="${FP}font-size:17px;font-weight:700;">${esc(a.title)}</div><div style="font-size:12px;line-height:1.5;">${esc(a.desc)}</div></div>
       <span style="flex:none;padding:3px 8px;${FP}font-size:12px;font-weight:700;letter-spacing:1px;${a.on ? bOn : bOff}">${a.on ? 'UNLOCKED' : 'LOCKED'}</span>
     </div>`).join('');

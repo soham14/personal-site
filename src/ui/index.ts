@@ -4,6 +4,7 @@ import { state, setState, subscribe, on, emit } from '../state.ts';
 import { PROFILE, STAGES, MAPS, MENTORS, PORTAL, TRIALS, WORLD, type TrialKind } from '../content.ts';
 import { crestDataURL } from './crests.ts';
 import { profileHTML, toggleFlip } from './profile.ts';
+import { heroCanvas, heroCrop, npcCanvas } from '../render/textures.ts';
 import { esc, ACC, FP, titleSkin, rgba } from './util.ts';
 
 export { registerSW } from './sw.ts';
@@ -20,6 +21,26 @@ function el(html: string): HTMLElement {
   t.innerHTML = html.trim();
   return t.content.firstElementChild as HTMLElement;
 }
+/** Fill the empty sprite slots (profile avatar, journey portraits, mentor portrait) with canvases. */
+function hydrateSprites(root: HTMLElement): void {
+  const put = (host: Element, c: HTMLCanvasElement) => {
+    c.style.cssText = 'display:block;image-rendering:pixelated;width:100%;height:100%;';
+    host.replaceChildren(c);
+  };
+  root.querySelectorAll<HTMLElement>('[data-avatar]').forEach((e) => {
+    put(e, heroCanvas(Number(e.dataset.avatar) || 0, 2.2));
+  });
+  root.querySelectorAll<HTMLElement>('[data-portrait]').forEach((e) => {
+    const t = Number(e.dataset.portrait) || 0;
+    put(e, heroCanvas(t, 2, { crop: heroCrop(t, 2, 64, 64) }));
+  });
+  root.querySelectorAll<HTMLElement>('[data-portrait-npc]').forEach((e) => {
+    if (e.dataset.portraitNpc === '') return;
+    const i = Number(e.dataset.portraitNpc) || 0;
+    put(e, npcCanvas(i, 3, heroCrop(3, 3, 104, 104)));
+  });
+}
+
 /** Re-render a slot only when its HTML actually changed (state ticks every frame). */
 function patch(slot: HTMLElement, html: string): void {
   if ((slot as any)._html === html) return;
@@ -29,6 +50,7 @@ function patch(slot: HTMLElement, html: string): void {
   const focusAct = (document.activeElement as HTMLElement | null)?.closest?.('[data-act]') as HTMLElement | null;
   const fkey = focusAct && slot.contains(focusAct) ? focusAct.dataset.act + '|' + (focusAct.dataset.i || focusAct.dataset.tab || focusAct.dataset.kind || '') : '';
   slot.innerHTML = html;
+  hydrateSprites(slot);
   const s2 = slot.querySelector('[data-scroll]') as HTMLElement | null;
   if (s2) s2.scrollTop = top;
   if (fkey) {
