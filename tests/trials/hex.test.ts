@@ -17,10 +17,13 @@ function seeded(seed: number): () => number {
 const ROWS = 3, COLS = 4, N = ROWS * COLS;
 const mod6 = (v: number) => ((v % 6) + 6) % 6;
 
-/** All rotations that route light from the source to the seal, found by walking a path tile by tile. */
+/**
+ * All rotations that route light from the source to the seal, found by walking a path tile by tile.
+ * Tiles off the path are free and marked -1 (see `fill`).
+ */
 function solutions(L: Layout): number[][] {
   const out: number[][] = [];
-  const turns = L.tiles.map(() => 0);
+  const turns = L.tiles.map(() => -1);
   const used = new Set<number>();
   const sealTile = L.seal * COLS + COLS - 1;
   const walk = (i: number, inEdge: number) => {
@@ -34,12 +37,15 @@ function solutions(L: Layout): number[][] {
       if (i === sealTile && outs.includes(0)) { out.push([...turns]); continue; }
       for (const o of outs) { const nb = hexNb(Math.floor(i / COLS), i % COLS, o); if (nb >= 0) walk(nb, (o + 3) % 6); }
     }
-    turns[i] = 0;
+    turns[i] = -1;
     used.delete(i);
   };
   walk(L.src * COLS, 3);
   return out;
 }
+
+/** A solution with its free tiles left as in `base`. */
+const fill = (sol: number[], base: number[]) => sol.map((t, i) => (t < 0 ? base[i] : t));
 
 function start(seed = 1) {
   vi.spyOn(Math, 'random').mockImplementation(seeded(seed));
@@ -67,7 +73,7 @@ function safeTile(deal: ReturnType<typeof dealHex>): number {
 
 /** Click every tile the number of times needed to reach the solution. */
 function solve(s: ReturnType<typeof start>) {
-  const target = solutions(s.deal.L)[0];
+  const target = fill(solutions(s.deal.L)[0], s.deal.turns);
   let clicks = 0;
   target.forEach((t, i) => { for (let k = mod6(t - s.deal.turns[i]); k > 0; k--) { s.tile(i).click(); clicks++; } });
   return clicks;
@@ -117,8 +123,8 @@ describe('hexConn', () => {
     for (const L of LAYOUTS) {
       const sols = solutions(L);
       expect(sols.length).toBeGreaterThan(0);
-      for (const t of sols) {
-        const c = hexConn(L, t);
+      for (const sol of sols) {
+        const c = hexConn(L, fill(sol, L.tiles.map(() => 0)));
         expect(c.sealed).toBe(true);
         expect(c.lit[L.src * COLS].some(Boolean)).toBe(true);
         expect(c.lit[L.seal * COLS + COLS - 1].some(Boolean)).toBe(true);
@@ -171,7 +177,7 @@ describe('dealHex', () => {
       for (const sol of solutions(L)) {
         const vals: number[] = [];
         for (let i = 0; i < N; i++) {
-          const v = grid.find((c) => { const a = Array(N).fill(0.5); a[i] = c; return mod6(dealHex(script(pick, a).rand).turns[i]) === sol[i]; });
+          const v = sol[i] < 0 ? 0.5 : grid.find((c) => { const a = Array(N).fill(0.5); a[i] = c; return mod6(dealHex(script(pick, a).rand).turns[i]) === sol[i]; });
           if (v === undefined) break;
           vals.push(v);
         }
