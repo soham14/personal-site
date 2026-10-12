@@ -1,0 +1,5 @@
+<!doctype html><meta charset="utf-8"><script type="importmap">{"imports":{"phaser":"/vendor/phaser.esm.js"}}</script>
+<body style="margin:0;width:180px;height:180px;background:linear-gradient(#0b1330,#172756);overflow:hidden"><script type="module">
+import { heroCanvas, heroCrop } from '/js/render/textures.js';
+const k=2.6, cr=heroCrop(3,k,180,180); cr.t+=0; const c=heroCanvas(3,k,{crop:cr}); c.style.cssText='display:block;image-rendering:pixelated';document.body.appendChild(c);
+</script>
