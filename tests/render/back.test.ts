@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import { backGrid, backRuns, BACK_FRAMES, FACE, HEAD0, HEAD1, HC0, HC1, ARM_ROWS, ARM_LIFT } from '../../src/render/back.ts';
 import { legacy } from '../../src/render/legacy.ts';
 
@@ -106,6 +106,59 @@ describe('backRuns', () => {
       for (let x = r.x; x < r.x + r.w; x++) expect(g[r.y][x]).toBe(ch);
       if (r.x > 0) expect(g[r.y][r.x - 1]).not.toBe(ch);
       if (r.x + r.w < g[r.y].length) expect(g[r.y][r.x + r.w]).not.toBe(ch);
+    });
+  });
+});
+
+// Edge cases the shipped sprites don't exercise, on tiny synthetic sprites (same grid size and template rows).
+describe('with synthetic sprites', () => {
+  const H = front(0).length, W = front(0)[0].length;
+  const ROBE = 'n', CAPE = 'c', HAIR = 'h', SKIN = [...FACE][0];
+  const sprite = (cape: boolean) => {
+    const g: string[][] = Array.from({ length: H }, () => Array(W).fill('.'));
+    // the row just below the face template: outline, a hair pixel, two face pixels, outline
+    const y = HEAD1 + 1;
+    g[y][HC0 + 2] = 'k'; g[y][HC0 + 3] = HAIR; g[y][HC0 + 4] = SKIN; g[y][HC0 + 5] = SKIN; g[y][HC0 + 6] = 'k';
+    for (let r = ARM_ROWS[0]; r <= ARM_ROWS[1] + 3; r++) for (let x = 11; x <= 24; x++) g[r][x] = ROBE;
+    const layers: Record<string, { g: string[][] }> = { base: { g } };
+    if (cape) layers.cape = { g: [[CAPE, CAPE, '.']] }; // a one-colour cape
+    return { layers, pal: { k: '#000', h: '#111', H: '#222', L: '#333', [SKIN]: '#444', n: '#555', c: '#666' } };
+  };
+  const fakes = [sprite(false), sprite(true)];
+  let back: typeof import('../../src/render/back.ts');
+
+  beforeAll(async () => {
+    vi.resetModules();
+    vi.doMock('../../src/render/legacy.ts', () => ({
+      legacy: { v2Sprites: () => fakes, v2Pose: (tier: number) => fakes[tier].layers.base.g.map((r) => r.slice()) },
+    }));
+    back = await import('../../src/render/back.ts');
+  });
+  afterAll(() => { vi.doUnmock('../../src/render/legacy.ts'); vi.resetModules(); });
+
+  it('below the face rows only face pixels turn into hair; existing hair is kept', () => {
+    const g = back.backGrid(0, 0), y = HEAD1 + 1;
+    expect(g[y][HC0 + 3]).toBe(HAIR);
+    expect(FACE.has(g[y][HC0 + 4])).toBe(false);
+    expect(FACE.has(g[y][HC0 + 5])).toBe(false);
+    expect(g[y][HC0 + 4]).not.toBe('.');
+  });
+
+  it('a one-colour cape is drawn in that colour and outlined', () => {
+    FRAMES.forEach((frame) => {
+      const g = back.backGrid(1, frame);
+      let runs = 0;
+      g.forEach((row) => {
+        for (let x = 0; x < row.length; x++) {
+          if (row[x] !== CAPE || row[x - 1] === CAPE) continue;
+          let e = x;
+          while (row[e + 1] === CAPE) e++;
+          runs++;
+          expect(row[x - 1]).toBe('k');
+          expect(row[e + 1]).toBe('k');
+        }
+      });
+      expect(runs).toBeGreaterThan(0);
     });
   });
 });
