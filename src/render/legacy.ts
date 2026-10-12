@@ -932,6 +932,15 @@ class Legacy {
     // Stars (densest on the observatory map)
     const stars = [];
     const maxTop = tier === 3 ? 60 : 44;
+    if (m.day) {
+      // Daytime sky (Azure Citadel): a blocky sun with a soft halo, and a few drifting pixel clouds
+      stars.push({ s: 'position:absolute;left:78%;top:9%;width:64px;height:64px;background:#fff1a8;border-radius:50%;box-shadow:0 0 0 6px #ffd95a;' });
+      [[6, 12, 150], [30, 24, 110], [52, 8, 170], [66, 30, 120], [90, 18, 100]].forEach((c) => {
+        const w = c[2], h = Math.round(w * 0.28);
+        stars.push({ s: 'position:absolute;left:' + c[0] + '%;top:' + c[1] + '%;width:' + w + 'px;height:' + h + 'px;background:#f4f9ff;border-radius:' + h + 'px;box-shadow:0 4px 0 #d6e8fa;' });
+        stars.push({ s: 'position:absolute;left:' + c[0] + '%;top:' + c[1] + '%;margin-left:' + Math.round(w * 0.2) + 'px;margin-top:-' + Math.round(h * 0.6) + 'px;width:' + Math.round(w * 0.45) + 'px;height:' + Math.round(h * 1.2) + 'px;background:#f4f9ff;border-radius:50%;' });
+      });
+    }
     for (let i = 0; i < m.stars; i++) {
       const big = rnd() > 0.82;
       const sz = big ? 4 : 3;
