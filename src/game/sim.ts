@@ -6,8 +6,8 @@ import { state, setState, emit, on } from '../state.ts';
 
 const C = WORLD;
 
-/** Internal (non-shared) simulation state, like the mockup's this.sim. */
-export const sim = {
+function freshSim() {
+  return {
   px: state.px, py: state.py, vy: 0, facing: 1 as 1 | -1, onGround: true, climbing: false,
   ladder: null as null | { x: number; top: number; map: number },
   left: false, right: false, up: false, down: false, padL: false, padR: false,
@@ -20,7 +20,10 @@ export const sim = {
   wt: 0,
   /** advancement display: tier whose outfit is shown (swaps at the 650ms peak); t0 = performance.now()/1000 */
   adv: null as null | { tier: number; swapped: boolean; t0: number }
-};
+  };
+}
+/** Internal (non-shared) simulation state, like the mockup's this.sim. */
+export const sim = freshSim();
 
 const timers: number[] = [];
 function later(fn: () => void, ms: number) { timers.push(window.setTimeout(fn, ms)); }
@@ -144,19 +147,22 @@ export function initSim(startTier = 0) {
 }
 
 // ---- events from other modules ----
-on('walkTo', (p: { i?: number; talk?: boolean; x?: number }) => {
+function onWalkTo(p: { i?: number; talk?: boolean; x?: number }) {
   if (typeof p.x === 'number') walkToX(p.x);
   else if (typeof p.i === 'number') walkTo(p.i, !!p.talk);
-});
+}
 // A finished gate trial: remember the bonus (shown on the next quest card), and the trial's "continue" walks
 // the player through the gate (trials emit walkTo {x: gateX + 20}). As a fallback, closing a gate trial result
 // with no walkTo still lets normal play continue.
-on('trialDone', (p: { kind: TrialKind; gate?: boolean; bonus?: number }) => {
+function onTrialDone(p: { kind: TrialKind; gate?: boolean; bonus?: number }) {
   if (p && p.gate && p.kind !== 'stk') {
     gateBonus = p.bonus || 0;
     gateBonusIdx = ({ hex: 0, lan: 1, rush: 2 } as Record<string, number>)[p.kind] ?? -1;
   }
-});
+}
+// Named handlers: subscribing the same function twice is a no-op, so re-binding is safe.
+function bindEvents() { on('walkTo', onWalkTo); on('trialDone', onTrialDone); }
+bindEvents();
 
 function locked(paused: boolean) {
   return state.talk !== null || state.profileOpen || state.resumeOpen || state.trial !== null || paused;
@@ -245,7 +251,7 @@ export function tick(dtIn: number): boolean {
       s.climbAcc += dt;
       if (s.climbAcc >= 0.3) { s.climbAcc = 0; s.climbAlt = !s.climbAlt; sfx('climb', s.climbAlt ? 1 : 0); }
     } else s.climbAcc = 0.2;
-    const top = s.ladder ? s.ladder.top : 0;
+    const top = s.ladder!.top; // always set when climbing starts (both grab paths assign it)
     if (s.py >= top) { s.py = top; s.climbing = false; s.onGround = true; s.vy = 0; }
     else if (s.py <= 0) { s.py = 0; s.climbing = false; s.onGround = true; s.vy = 0; }
   }
@@ -356,3 +362,11 @@ export function legPose(): number {
 }
 
 export function disposeSim() { timers.forEach((id) => clearTimeout(id)); timers.length = 0; }
+
+/** Fresh simulation (tests / a fresh start): clears timers, module state and re-binds event handlers. */
+export function resetSim() {
+  disposeSim();
+  Object.assign(sim, freshSim());
+  gateBonus = 0; gateBonusIdx = -1; advId = 0; rewardId = 0; sealArmed = true; viewW = 0;
+  bindEvents();
+}
