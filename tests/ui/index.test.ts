@@ -557,15 +557,19 @@ describe('résumé overlay', () => {
 
   it('is preloaded hidden in idle time after the page loads', () => {
     const ric = vi.fn((cb: () => void) => cb());
-    vi.stubGlobal('requestIdleCallback', ric);
-    window.dispatchEvent(new Event('load'));
-    expect(ric).toHaveBeenCalled();
-    expect(overlay().style.visibility).toBe('hidden');
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    (window as any).requestIdleCallback = ric;
+    try {
+      window.dispatchEvent(new Event('load'));
+      expect(ric).toHaveBeenCalled();
+      expect(overlay().style.visibility).toBe('hidden');
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      delete (window as any).requestIdleCallback;
+    }
   });
 
   it('is preloaded on a timer when idle callbacks are unavailable', () => {
-    vi.stubGlobal('requestIdleCallback', undefined);
+    expect((window as any).requestIdleCallback).toBeUndefined();
     window.dispatchEvent(new Event('load'));
     expect(overlay()).toBeNull();
     vi.runAllTimers();
