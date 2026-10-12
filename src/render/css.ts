@@ -361,17 +361,15 @@ export function parseAnims(c: Css): AnimSpec[] {
 
 export interface AnimOut { dx: number; dy: number; alpha: number; scale: number; rot: number }
 
+// Linear interpolation between keyframes [pos, x, y] (pos strictly increasing from 0 to 1); p is in [0, 1].
 const lerpKF = (kf: [number, number, number][], p: number): [number, number] => {
-  for (let i = 0; i < kf.length - 1; i++) {
-    const a = kf[i], b = kf[i + 1];
-    if (p >= a[0] && p <= b[0]) {
-      const q = (p - a[0]) / (b[0] - a[0] || 1);
-      return [a[1] + (b[1] - a[1]) * q, a[2] + (b[2] - a[2]) * q];
-    }
-  }
-  return [kf[kf.length - 1][1], kf[kf.length - 1][2]];
+  let i = 0;
+  while (i < kf.length - 2 && p > kf[i + 1][0]) i++;
+  const a = kf[i], b = kf[i + 1], q = (p - a[0]) / (b[0] - a[0]);
+  return [a[1] + (b[1] - a[1]) * q, a[2] + (b[2] - a[2]) * q];
 };
-const ease = (e: string, p: number) => e === 'linear' ? p : (e === 'inout' ? p * p * (3 - 2 * p) : (e === 'out' ? 1 - (1 - p) * (1 - p) : (e === 'in' ? p * p : p * p * (3 - 2 * p))));
+// ease-in-out (smoothstep)
+const easeInOut = (p: number) => p * p * (3 - 2 * p);
 
 /** Evaluate the mockup keyframes at time t (seconds). */
 export function evalAnims(list: AnimSpec[], t: number, out: AnimOut): AnimOut {
@@ -393,7 +391,7 @@ export function evalAnims(list: AnimSpec[], t: number, out: AnimOut): AnimOut {
         const [x, y] = lerpKF([[0, 0, 0], [0.25, 10, -8], [0.5, 18, 4], [0.75, 6, 10], [1, 0, 0]], p);
         out.dx += x; out.dy += y; break;
       }
-      case 'fog': out.dx += -70 + 140 * ease('inout', p); break;
+      case 'fog': out.dx += -70 + 140 * easeInOut(p); break;
       case 'ember': {
         const [x, y] = lerpKF([[0, 0, 0], [0.5, 16, -12], [1, 0, 0]], p);
         out.dx += x; out.dy += y; out.rot += p * Math.PI * 2; break;

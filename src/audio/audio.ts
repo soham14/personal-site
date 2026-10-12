@@ -19,6 +19,9 @@ let soundToasted = false;
 let silentEl: HTMLAudioElement | null = null;
 let hiddenSuspended = false;
 
+// Swallow a rejected play()/resume()/suspend() promise (browsers reject when not allowed; nothing to do about it).
+function settle(p: any): void { if (p && p.catch) p.catch(() => {}); }
+
 const setPlayback = () => {
   // iOS: let Web Audio play even when the ring/silent switch is on (Safari 16.4+).
   try { const n = navigator as any; if (typeof navigator !== 'undefined' && n.audioSession) n.audioSession.type = 'playback'; } catch (err) { /* ignore */ }
@@ -52,12 +55,11 @@ function audioEnsure(): AU | null {
 }
 
 function audioWake(): void {
-  const A = au;
-  if (!A) return;
+  const A = au!;
   setPlayback();
   // iOS/Android can leave the context 'suspended' or 'interrupted'; resume inside the gesture.
   if (A.ctx.state !== 'running') {
-    try { const p = A.ctx.resume(); if (p && p.catch) p.catch(() => {}); } catch (err) { /* ignore */ }
+    try { settle(A.ctx.resume()); } catch (err) { /* ignore */ }
   }
   // iOS silent switch fallback: a looping silent <audio> element moves the page's audio session to "playback".
   silentKeepAlive(true);
@@ -92,8 +94,7 @@ function silentKeepAlive(on: boolean): void {
       el.setAttribute('x-webkit-airplay', 'deny');
       silentEl = el;
     }
-    const p = silentEl.play();
-    if (p && p.catch) p.catch(() => {});
+    settle(silentEl.play());
   } catch (err) { /* ignore */ }
 }
 
@@ -123,16 +124,9 @@ export function setSoundFlags(music: boolean, sfx: boolean): void {
   setState({ musicOn: musOn, sfxOn: sfxOn, soundNA: false });
   if (musOn && musicWasOff && !soundToasted) {
     soundToasted = true;
-    const mi = state.bz;
-    emit('log', { text: mi === 0 ? '♪ Now playing: Academy Grounds' : '♪ Now playing: ' + mapName(mi) });
+    emit('log', { text: '♪ Now playing: ' + MAPS[state.bz].name });
   }
   audioApply();
-}
-
-function mapName(i: number): string {
-  const c = { maps: MAPS as any };
-  const m = c.maps && c.maps[i];
-  return (m && m.name) || ['Academy Grounds', 'Azure Citadel', 'Crimson Grove', 'Obsidian Spire'][i];
 }
 
 function audioApply(): void {
@@ -142,7 +136,7 @@ function audioApply(): void {
   if (!musOn && !sfxOn) {
     musicStop();
     silentKeepAlive(false);
-    try { const p = c.suspend(); if (p && p.catch) p.catch(() => {}); } catch (err) { /* ignore */ }
+    try { settle(c.suspend()); } catch (err) { /* ignore */ }
     return;
   }
   audioWake();
@@ -158,8 +152,7 @@ function audioApply(): void {
 }
 
 function musicStop(): void {
-  const A = au;
-  if (!A) return;
+  const A = au!;
   if (A.timer !== null) { clearTimeout(A.timer); A.timer = null; }
   Object.keys(A.loops).forEach((k) => loopStop(k));
 }
@@ -173,15 +166,13 @@ function loopStart(i: number): void {
 }
 
 function loopStop(k: string | number): void {
-  const A = au;
-  const L = A && A.loops[k];
-  if (!L) return;
-  try { L.g.disconnect(); } catch (err) { /* ignore */ }
-  delete A!.loops[k];
+  const A = au!;
+  try { A.loops[k].g.disconnect(); } catch (err) { /* ignore */ }
+  delete A.loops[k];
 }
 
 // Per-map weights from the gate blend (state.blend, same value that crossfades the scenery): cur gets 1 - t, the neighbour t.
-function musicWeights(): number[] {
+export function musicWeights(): number[] {
   const w = [0, 0, 0, 0];
   const bl = state.blend;
   const cur = Math.max(0, Math.min(3, bl ? bl.cur : state.bz));
@@ -217,10 +208,9 @@ function duckSync(): void {
 }
 
 // Look-ahead scheduler: every ~25ms schedule whatever falls in the next ~120ms against ctx.currentTime.
+// (musicStop clears the timer whenever music turns off, so this only ever runs while music is on.)
 function musicSched(): void {
-  const A = au;
-  if (!A) return;
-  if (!musOn) { A.timer = null; return; }
+  const A = au!;
   const c = A.ctx;
   if (c.state === 'running') {
     const now = c.currentTime;
@@ -236,7 +226,7 @@ function musicSched(): void {
         const evs = L.song.at[L.step];
         for (let i = 0; i < evs.length; i++) {
           const ev = evs[i][1];
-          playNote(L.g, evs[i][0], nf(ev[1]), L.next, ev[2] * sd, ev[3]);
+          playNote(L.g, evs[i][0], noteFreq(ev[1]), L.next, ev[2] * sd, ev[3]);
         }
         L.step = (L.step + 1) % L.song.steps;
         L.next += sd;
@@ -246,8 +236,8 @@ function musicSched(): void {
   A.timer = setTimeout(musicSched, 25);
 }
 
-// Note name ('F4', 'Bb3', 'C#5') -> frequency in Hz.
-function nf(name: string): number {
+// Note name ('F4', 'Bb3', 'C#5') -> frequency in Hz (440 for anything unparseable).
+export function noteFreq(name: string): number {
   const m = /^([A-G])([#b]?)(-?\d)$/.exec(name);
   if (!m) return 440;
   const semi = ({ C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 } as Record<string, number>)[m[1]] + (m[2] === '#' ? 1 : (m[2] === 'b' ? -1 : 0));
@@ -292,7 +282,7 @@ function pulseWave() {
 }
 
   // Filtered white-noise burst from the cached noise buffer.
-function noiseTo(t, dur, ftype, f0, f1, q, dest, peak, att?) {
+function noiseTo(t, dur, ftype, f0, f1, q, dest, peak, att) {
     const c = au!.ctx;
     const s = c.createBufferSource();
     s.buffer = au!.noise;
@@ -300,10 +290,10 @@ function noiseTo(t, dur, ftype, f0, f1, q, dest, peak, att?) {
     fl.type = ftype;
     fl.frequency.setValueAtTime(f0, t);
     if (f1 && f1 !== f0) fl.frequency.exponentialRampToValueAtTime(f1, t + dur);
-    fl.Q.value = q || 0.7;
+    fl.Q.value = q;
     const g = c.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + (att || 0.003));
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + att);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     s.connect(fl); fl.connect(g); g.connect(dest);
     s.start(t, Math.random() * 1.0);
@@ -382,7 +372,7 @@ export function sfx(name: string, a?: any, b?: any, delay?: number): void {
   const A = au;
   if (!A || !sfxOn || A.ctx.state !== 'running') return;
   const c = A.ctx, o = A.sfxBus, t = c.currentTime + 0.01 + (delay || 0);
-  const note = (v: string, n: string, at: number, d: number, vel: number) => playNote(o, v, nf(n), at, d, vel);
+  const note = (v: string, n: string, at: number, d: number, vel: number) => playNote(o, v, noteFreq(n), at, d, vel);
     switch (name) {
       case 'jump': tone('square', 300, 820, t, 0.13, 0.16); break;
       case 'land': {
@@ -479,7 +469,7 @@ export function sfx(name: string, a?: any, b?: any, delay?: number): void {
         ['C5', 'G5', 'C6', 'E6'].forEach((n, i) => note('lead', n, t + i * 0.07, 0.12, 0.6));
         note('bell', 'G6', t + 0.28, 0.5, 0.7);
         break;
-      case 'sover': ['A4', 'F4', 'D4'].forEach((n, i) => tone('triangle', nf(n), 0, t + i * 0.17, 0.26, 0.22)); break;
+      case 'sover': ['A4', 'F4', 'D4'].forEach((n, i) => tone('triangle', noteFreq(n), 0, t + i * 0.17, 0.26, 0.22)); break;
       case 'rate': {
         // Results jingle: a = stars (1-5); n+1 notes up a pentatonic scale, the last one held with a bell
         const sc = ['C5', 'D5', 'E5', 'G5', 'A5', 'C6'];
@@ -496,8 +486,14 @@ export function sfx(name: string, a?: any, b?: any, delay?: number): void {
     }
   }
 
-/** Wire audio to the event bus + gestures + page visibility. Call once at startup. */
-export function initAudio(): void {
+/** Forget the AudioContext and all switches (tests / a fresh start). Listeners are removed by initAudio's return value. */
+export function resetAudio(): void {
+  if (au && au.timer !== null) clearTimeout(au.timer);
+  au = null; musOn = false; sfxOn = false; soundToasted = false; silentEl = null; hiddenSuspended = false;
+}
+
+/** Wire audio to the event bus + gestures + page visibility. Call once at startup. Returns a function that removes the DOM listeners. */
+export function initAudio(): () => void {
   on('sfx', (p) => { if (p && p.name) sfx(p.name, p.a, p.b, p.delay); });
   on('jump', () => sfx('jump'));
   on('land', (p) => sfx('land', p && p.fall));
@@ -506,31 +502,40 @@ export function initAudio(): void {
   on('trialDone', (p) => { if (p && p.stars) sfx('rate', p.stars); });
   on('enterMap', () => { if (au) { au.wk = ''; musicSync(); } });
 
-  window.addEventListener('keydown', (e) => {
+  const onKey = (e: KeyboardEvent) => {
     if (e.code === 'KeyM' && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) {
       const tg = e.target as any;
       if (!(tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.isContentEditable))) { toggleSound(); return; }
     }
     audioGesture(e);
-  }, true);
-  window.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') audioGesture(e); }, true);
-  window.addEventListener('pointerup', (e) => { if (e.pointerType === 'touch') audioGesture(e); }, true);
-
-  document.addEventListener('visibilitychange', () => {
+  };
+  const onDown = (e: PointerEvent) => { if (e.pointerType !== 'touch') audioGesture(e); };
+  const onUp = (e: PointerEvent) => { if (e.pointerType === 'touch') audioGesture(e); };
+  const onVis = () => {
     const A = au;
     if (!A) return;
     if (document.hidden) {
       if (A.ctx.state === 'running') {
         hiddenSuspended = true;
         silentKeepAlive(false);
-        try { const p = A.ctx.suspend(); if (p && p.catch) p.catch(() => {}); } catch (err) { /* ignore */ }
+        try { settle(A.ctx.suspend()); } catch (err) { /* ignore */ }
       }
     } else if (hiddenSuspended) {
       hiddenSuspended = false;
       if (musOn || sfxOn) {
-        try { const p = A.ctx.resume(); if (p && p.catch) p.catch(() => {}); } catch (err) { /* ignore */ }
+        try { settle(A.ctx.resume()); } catch (err) { /* ignore */ }
         silentKeepAlive(true);
       }
     }
-  });
+  };
+  window.addEventListener('keydown', onKey, true);
+  window.addEventListener('pointerdown', onDown, true);
+  window.addEventListener('pointerup', onUp, true);
+  document.addEventListener('visibilitychange', onVis);
+  return () => {
+    window.removeEventListener('keydown', onKey, true);
+    window.removeEventListener('pointerdown', onDown, true);
+    window.removeEventListener('pointerup', onUp, true);
+    document.removeEventListener('visibilitychange', onVis);
+  };
 }
