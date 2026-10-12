@@ -5,7 +5,7 @@ export const ACC = '#ffd166';
 export const FP = "font-family:'Pixelify Sans',monospace;";
 
 export function esc(s: string): string {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 /** "To next advancement" percent: EXP_BASE nudged by Keep Leveling, never reaching 100. */

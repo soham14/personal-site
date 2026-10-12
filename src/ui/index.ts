@@ -5,7 +5,7 @@ import { PROFILE, STAGES, MAPS, MENTORS, PORTAL, TRIALS, WORLD, type TrialKind }
 import { crestDataURL } from './crests.ts';
 import { profileHTML, toggleFlip } from './profile.ts';
 import { heroCanvas, heroCrop, npcCanvas } from '../render/textures.ts';
-import { esc, ACC, FP, titleSkin, rgba } from './util.ts';
+import { esc, ACC, FP, rgba } from './util.ts';
 
 export { registerSW } from './sw.ts';
 export { crestDataURL } from './crests.ts';
@@ -40,7 +40,7 @@ function hydrateSprites(root: HTMLElement): void {
     if (e.dataset.portraitNpc === '') return;
     const i = Number(e.dataset.portraitNpc) || 0;
     const cr = heroCrop(3, 3, 104, 104);
-    cr.t -= [10, 20, 20, 18][i] || 0; // Amelia and Tirumal sit low in the frame; lift them to center
+    cr.t -= [10, 20, 20, 18][i]; // Amelia and Tirumal sit low in the frame; lift them to center
     put(e, npcCanvas(i, 3, cr));
   });
 }
@@ -74,6 +74,7 @@ function later(key: string, ms: number, fn: () => void): void {
 
 // ---------- actions ----------
 function openProfile(open: boolean): void {
+  /* v8 ignore next */ // safety net: every caller (P/H toggle, Esc, close button) already passes the opposite state
   if (open === state.profileOpen) return;
   emit('sfx', { name: 'ui', a: open });
   if (open) {
@@ -85,7 +86,7 @@ function openResume(open: boolean): void {
   if (open === state.resumeOpen) return;
   setState({ resumeOpen: open });
 }
-function closeTalk(): void { if (state.talk !== null) setState({ talk: null }); }
+function closeTalk(): void { setState({ talk: null }); }
 
 // ---------- top bar ----------
 function topHTML(): string {
@@ -155,7 +156,7 @@ const REPLAY_STYLE = [
   'color:#c9ccd3;background:#2b2b2e;box-shadow:inset 2px 2px 0 #4a4a52,3px 3px 0 #1b2040;'
 ];
 function trialOf(mentor: number): TrialKind {
-  return (Object.keys(TRIALS) as TrialKind[]).find((k) => TRIALS[k].mentor === mentor) || 'stk';
+  return (Object.keys(TRIALS) as TrialKind[]).find((k) => TRIALS[k].mentor === mentor)!; // every mentor (0-3) has a trial
 }
 function talkHTML(): string {
   const talk = state.talk;
@@ -296,15 +297,11 @@ function showReward(idx: number, bonus: number): void {
   </div></div>`);
   slots.reward.replaceChildren(n);
   later('rewardFly', 3300, () => {
-
     const src = n.querySelector('[data-crest-src]') as HTMLElement;
-    const tgt = ui.querySelector('[data-fly="status"]') as HTMLElement | null;
-    let fx = 0, fy = 0;
-    if (src && tgt) {
-      const ra = src.getBoundingClientRect(), rb = tgt.getBoundingClientRect();
-      fx = Math.round(rb.left + rb.width / 2 - (ra.left + ra.width / 2));
-      fy = Math.round(rb.top + rb.height / 2 - (ra.top + ra.height / 2));
-    }
+    const tgt = ui.querySelector('[data-fly="status"]') as HTMLElement; // the PROFILE button is always in the top bar
+    const ra = src.getBoundingClientRect(), rb = tgt.getBoundingClientRect();
+    const fx = Math.round(rb.left + rb.width / 2 - (ra.left + ra.width / 2));
+    const fy = Math.round(rb.top + rb.height / 2 - (ra.top + ra.height / 2));
     n.style.animation = 'none';
     n.querySelectorAll<HTMLElement>('[data-fade]').forEach((f) => { f.style.animation = 'cardout 0.35s ease-in both'; });
     src.style.setProperty('--fx', fx + 'px');
@@ -316,37 +313,21 @@ function showReward(idx: number, bonus: number): void {
   });
 }
 
-// ---------- title chip over the player (camera = mockup's CSS clamp: player near 40% of width) ----------
-function syncTitleChip(): void {
-  const chip = slots.title;
-  // The game world (WorldScene) draws the title above the hero; drawing it here too doubled it.
-  const t = '';
-  if (!t) { if (chip.firstChild) chip.innerHTML = ''; return; }
-  if ((chip as any)._t !== t) {
-    (chip as any)._t = t;
-    const k = titleSkin(t);
-    chip.innerHTML = `<div aria-hidden="true" style="position:absolute;left:0;bottom:0;translate:-50% 0;white-space:nowrap;padding:0 6px;height:16px;line-height:16px;background:${k.bg};color:${k.tx};border:2px solid ${k.bd};box-shadow:2px 2px 0 #000;${FP}font-size:11px;font-weight:700;letter-spacing:1px;animation:bob 0.9s steps(1) infinite;">${esc(t)}</div>`;
-  }
-  const W = ui.clientWidth || window.innerWidth;
-  const camL = Math.max(W - WORLD.WMAX, Math.min(0.4 * W - state.px, 100));
-  chip.style.transform = `translate(${Math.round(camL + state.px)}px, ${-Math.round(70 + state.py + 112)}px)`;
-}
+// The hero's title is drawn by the game world (WorldScene) above the hero; the DOM title slot stays empty
+// so it is never doubled (it is only hidden during trials and while the profile is open).
 
 // ---------- main ----------
 function render(): void {
   patch(slots.top, topHTML());
-  const dot = slots.top.querySelector('[data-mini-dot]') as HTMLElement | null;
-  if (dot) {
-    dot.style.left = 'calc(' + Math.max(0, Math.min(100, state.px / WORLD_W * 100)).toFixed(2) + '% - 5px)';
-    // same vertical scale as the platform marks (ground line at 18px, 230 world px = 26 map px)
-    dot.style.bottom = (18 + Math.round(Math.max(0, state.py) / 230 * 26)) + 'px';
-  }
+  const dot = slots.top.querySelector('[data-mini-dot]') as HTMLElement; // always part of topHTML()
+  dot.style.left = 'calc(' + Math.max(0, Math.min(100, state.px / WORLD_W * 100)).toFixed(2) + '% - 5px)';
+  // same vertical scale as the platform marks (ground line at 18px, 230 world px = 26 map px)
+  dot.style.bottom = (18 + Math.round(Math.max(0, state.py) / 230 * 26)) + 'px';
   patch(slots.legend, legendHTML());
   patch(slots.hint, hintHTML());
   patch(slots.talk, talkHTML());
   patch(slots.profile, profileHTML());
   slots.title.style.display = state.trial || state.profileOpen ? 'none' : '';
-  syncTitleChip();
   syncResume();
 }
 
@@ -366,8 +347,8 @@ function onClick(e: MouseEvent): void {
     case 'mini': emit('walkTo', { i, talk: false }); break;
     case 'endChat': closeTalk(); break;
     case 'next': {
-      const t = state.talk;
-      if (t !== null && t < 4) { setState({ talk: null }); emit('walkTo', { i: t + 1, talk: true }); }
+      const t = state.talk as number; // the button only exists in a mentor dialogue (0-3)
+      setState({ talk: null }); emit('walkTo', { i: t + 1, talk: true });
       break;
     }
     case 'play': {
