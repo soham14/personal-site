@@ -41,7 +41,7 @@ export const STAGES = [
     highlights: [
       'Upgraded deployment velocity for the entire organization',
       'Shipped a large, high-visibility feature spanning 4 teams',
-      'Managed and mentored an intern'
+      'Managed an intern'
     ],
     outfit: 'Obsidian robe, silver cape',
     crest: 'Obsidian Block Crest', crestField: '#2b2b2e', crestTrim: '#c9ccd3',
@@ -74,7 +74,7 @@ export const MENTORS = [
   { name: 'Sky-Sage Tirumal', short: 'Tirumal', x: 760, h: 90,
     line: "The Yelp guild hall. More spells, more responsibility: owning systems end to end across Ad Discovery and Web Core, and increasing the business's revenue along the way (2019–2022)." },
   { name: 'Archivist Darragh', short: 'Darragh', x: 500, h: 80,
-    line: 'Present day. Soham is a Senior Software Engineer with the Roblox guild. He sped up deploys for the whole org, shipped a high-visibility feature across four teams, and mentored an intern. The portal ahead leads to his contact and résumé.' }
+    line: 'Present day. Soham is a Senior Software Engineer with the Roblox guild. He sped up deploys for the whole org, shipped a high-visibility feature across four teams, and managed an intern. The portal ahead leads to his contact and résumé.' }
 ];
 
 export const PORTAL = {

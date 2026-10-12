@@ -98,7 +98,7 @@ const RATE: Record<TrialKind, (v: number) => string> = {
 const ACHIEVEMENTS = [
   { title: 'Golden Bear Graduate', desc: 'Finished the academy at UC Berkeley.', on: true, now: false, crest: 0 },
   { title: 'Led a Cross-Org Feature', desc: 'Led the creation of a large, cross-organizational feature with the Roblox guild.', on: true, now: false, crest: 3 },
-  { title: 'Managed a New Mage', desc: 'Managed and mentored an intern with the Roblox guild.', on: true, now: false, crest: 3 },
+  { title: 'Managed a New Mage', desc: 'Managed an intern with the Roblox guild.', on: true, now: false, crest: 3 },
   { title: 'Reached Archmage', desc: 'Became a Senior Software Engineer with the Roblox guild.', on: true, now: true, crest: 3 },
   { title: '???', desc: 'Behind the sealed gate.', on: false, now: false, crest: 4 }
 ];
