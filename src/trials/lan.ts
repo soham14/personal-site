@@ -19,17 +19,31 @@ const glyphs: G[][] = [
   [[3, 3, 20, 20, INK, 'clip-path:polygon(0 82%,18% 100%,100% 18%,82% 0);'], [17, 0, 9, 9, INK, STARC], [2, 6, 3, 3, INK2, DIAC], [6, 1, 3, 3, INK2, DIAC]],
   [[1, 5, 24, 8, '#8a5a0a'], [1, 11, 24, 2, '#4d3205'], [15, 12, 8, 13, '#8a5a0a'], [15, 22, 8, 3, '#4d3205'], [5, 5, 2, 8, '#4d3205'], [10, 5, 2, 8, '#4d3205']]
 ];
-const symNames = ['an open book', 'a hexagon', 'a five-point star', 'a cube', 'a wand', 'a gold scarf'];
+/** Spoken names of the symbols, by card value. */
+export const symNames = ['an open book', 'a hexagon', 'a five-point star', 'a cube', 'a wand', 'a gold scarf'];
 
-export function createLan(ctx: TrialCtx): TrialGame {
+/** Shuffle the six symbol pairs onto the 12 lanterns (Fisher-Yates). */
+export function dealLanterns(rand: () => number = Math.random): number[] {
   const cards = [0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5];
   for (let i = cards.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rand() * (i + 1));
     const tmp = cards[i]; cards[i] = cards[j]; cards[j] = tmp;
   }
+  return cards;
+}
+
+/** Win score: seconds left plus a bonus for few moves. */
+export function lanScore(secs: number, moves: number): number { return secs * 5 + Math.max(0, 30 - moves) * 10; }
+export function lanStars(sc: number): number { return sc >= 330 ? 5 : (sc >= 260 ? 4 : (sc >= 190 ? 3 : (sc >= 110 ? 2 : 1))); }
+
+/** Seconds on the fuse. */
+export const LAN_TIME = 60;
+
+export function createLan(ctx: TrialCtx): TrialGame {
+  const cards = dealLanterns();
   const g = {
     phase: 'lplay' as 'lplay' | 'lwin', cards, cs: cards.map(() => 0), first: -1, second: -1, lock: 0,
-    moves: 0, pairs: 0, t: 0, time: 60, cur: -1, clock: 0, acc: 0, dirty: false, winT: 0, secs: 0, bursts: [] as { i: number; age: number }[]
+    moves: 0, pairs: 0, t: 0, time: LAN_TIME, cur: -1, clock: 0, acc: 0, dirty: false, winT: 0, secs: 0, bursts: [] as { i: number; age: number }[]
   };
 
   const P = palette('lan');
@@ -96,7 +110,7 @@ export function createLan(ctx: TrialCtx): TrialGame {
         sfx('lmatch', 0, 0, 0.12);
         if (g.pairs >= 6) {
           g.phase = 'lwin'; g.winT = 0;
-          g.secs = Math.floor(Math.max(0, 60 - g.t));
+          g.secs = Math.floor(Math.max(0, LAN_TIME - g.t));
           sfx('lwin', 0, 0, 0.45);
         }
       } else {
@@ -156,7 +170,7 @@ export function createLan(ctx: TrialCtx): TrialGame {
     svg.setAttribute('style', 'position:absolute;left:0;top:0;width:100%;height:' + AH + 'px;pointer-events:none;overflow:visible;' + (winning ? 'filter:drop-shadow(0 0 5px #ffcf8a) drop-shadow(0 0 10px #ffb454);' : ''));
     paths.forEach((p) => p.setAttribute('style', 'fill:none;vector-effect:non-scaling-stroke;stroke-width:' + (winning ? 3 : 2.5) + 'px;stroke:' + (winning ? '#ffe3b0' : '#b89a6c') + ';'));
 
-    const frac = Math.max(0, Math.min(1, g.time / 60));
+    const frac = Math.max(0, Math.min(1, g.time / LAN_TIME));
     const low = g.time < 10;
     sty(cord, 'position:absolute;left:0;top:9px;height:7px;width:' + (frac * 100).toFixed(2) + '%;background:#e0c08e;box-shadow:inset 0 -2px 0 #b8956a;');
     sty(flame, 'position:absolute;left:calc(' + (frac * 100).toFixed(2) + '% - 7px);top:-5px;width:14px;height:20px;background:#ff9a3c;clip-path:polygon(50% 0,80% 35%,100% 65%,80% 92%,50% 100%,20% 92%,0 65%,20% 35%);transform-origin:50% 100%;animation:candle ' + (low ? '0.3' : '0.5') + 's steps(1) infinite;');
@@ -175,8 +189,8 @@ export function createLan(ctx: TrialCtx): TrialGame {
       ctx.finish({ won: false, score: 0, stars: 0, bonus: 0, pairs: g.pairs, moves: g.moves });
       return;
     }
-    const sc = g.secs * 5 + Math.max(0, 30 - g.moves) * 10;
-    const stars = sc >= 330 ? 5 : (sc >= 260 ? 4 : (sc >= 190 ? 3 : (sc >= 110 ? 2 : 1)));
+    const sc = lanScore(g.secs, g.moves);
+    const stars = lanStars(sc);
     log('[System] Lantern Match: ' + g.moves + ' moves, ' + '★'.repeat(stars));
     sfx('rate', stars);
     ctx.finish({ won: true, score: sc, stars, bonus: sc * 10, secs: g.secs, moves: g.moves, pairs: g.pairs });
@@ -193,7 +207,7 @@ export function createLan(ctx: TrialCtx): TrialGame {
       g.bursts = nb;
       if (g.phase === 'lplay') {
         g.t += dt;
-        g.time = Math.max(0, 60 - g.t);
+        g.time = Math.max(0, LAN_TIME - g.t);
         if (g.lock > 0) {
           g.lock -= dt;
           if (g.lock <= 0) {
