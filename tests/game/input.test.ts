@@ -113,9 +113,12 @@ describe('keyboard movement', () => {
     expect(sim.right).toBe(false);
   });
 
-  it('a key with no code is ignored', () => {
+  it('a key with no code is ignored, pressed or released', () => {
+    press('ArrowLeft');
     const e = press('', { key: 'x' });
     expect(e.defaultPrevented).toBe(false);
+    key('keyup', '', { key: 'x' });
+    expect(sim.left).toBe(true);
   });
 });
 
