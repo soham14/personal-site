@@ -38,6 +38,11 @@ jobs:
       - name: Unit tests with coverage
         id: tests
         run: npx vitest run --coverage --reporter=default --reporter=json --outputFile.json=test-results.json
+      - name: Worker benchmark (temporary)
+        if: always()
+        run: |
+          node -e "console.log('cpus', require('os').availableParallelism())" > bench.txt
+          for w in 1 2 4 8; do s=$(date +%s.%N); npx vitest run --coverage --maxWorkers=$w --minWorkers=1 --reporter=dot > /dev/null 2>&1; e=$(date +%s.%N); echo "workers=$w seconds=$(echo "$e - $s" | bc)" >> bench.txt; done
       - name: Publish test report
         if: always()
         run: |
@@ -49,8 +54,32 @@ jobs:
           echo "${GITHUB_SHA}" > sha.txt && git add ci-report.txt sha.txt && git commit -qm "report ${GITHUB_SHA}"
           git push -fq origin "HEAD:refs/heads/${BR}"
 
+  e2e:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # publishes the plain-text e2e report to a ci-e2e/<branch> branch
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npx vite build
+      - name: End-to-end smoke tests (desktop, Android, iPhone)
+        run: npx playwright test
+      - name: Publish e2e report
+        if: always()
+        run: |
+          node tools/e2e-report.mjs || true
+          cp e2e-report.txt /tmp/e2e-report.txt
+          git config user.name "ci" && git config user.email "ci@users.noreply.github.com"
+          git checkout --orphan report-tmp && git rm -rfq . >/dev/null && cp /tmp/e2e-report.txt e2e-report.txt
+          echo "${GITHUB_SHA}" > sha.txt && git add e2e-report.txt sha.txt && git commit -qm "e2e report ${GITHUB_SHA}"
+          git push -fq origin "HEAD:refs/heads/ci-e2e/${GITHUB_REF_NAME}"
+
   build:
-    needs: [typecheck, test]
+    needs: [typecheck, test, e2e]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:

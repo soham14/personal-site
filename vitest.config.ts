@@ -6,6 +6,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['tests/**/*.test.ts'],
+    // Test files run in parallel, one worker per CPU core (GitHub's runner has 4).
+    pool: 'forks',
     setupFiles: ['tests/setup.ts'],
     restoreMocks: true,
     coverage: {
