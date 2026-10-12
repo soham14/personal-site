@@ -210,10 +210,24 @@ function buildResume(): HTMLElement {
   <div style="flex:none;display:flex;justify-content:flex-start;padding:12px 16px;background:#f6f3ea;border-bottom:2px solid #c9c2ad;">
     <button type="button" data-act="closeResume" tabindex="-1" style="display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;box-sizing:border-box;${FP}font-size:15px;font-weight:700;color:#ffd166;background:#1b2040;border:3px solid #1b2040;border-radius:0;cursor:pointer;box-shadow:3px 3px 0 #ffd166;">&#9664; Back to the game</button>
   </div>
-  <iframe title="Résumé" src="resume/?embedded=1" tabindex="-1"></iframe>
+  <div class="cq-resume-scroll"><iframe title="Résumé" src="resume/?embedded=1" tabindex="-1" scrolling="no"></iframe></div>
 </div>`);
   slot.appendChild(r);
+  // iOS Safari won't reliably scroll an iframe (especially one laid out while hidden), so the iframe is
+  // sized to its full content height and the wrapper scrolls instead.
+  const f = r.querySelector('iframe') as HTMLIFrameElement;
+  f.addEventListener('load', fitResume);
+  window.addEventListener('resize', fitResume);
   return r;
+}
+function fitResume(): void {
+  const f = slots.resume.querySelector('iframe') as HTMLIFrameElement | null;
+  try {
+    const d = f?.contentDocument;
+    if (!f || !d || !d.body) return;
+    f.style.height = '0px';
+    f.style.height = Math.max(d.documentElement.scrollHeight, d.body.scrollHeight) + 'px';
+  } catch { /* cross-origin: leave as is */ }
 }
 function syncResume(): void {
   const open = state.resumeOpen;
@@ -224,7 +238,7 @@ function syncResume(): void {
   r.style.pointerEvents = open ? 'auto' : 'none';
   r.setAttribute('aria-hidden', open ? 'false' : 'true');
   r.querySelectorAll('button, iframe').forEach((x) => x.setAttribute('tabindex', open ? '0' : '-1'));
-  if (open) (r.querySelector('[data-act="closeResume"]') as HTMLElement).focus();
+  if (open) { fitResume(); (r.querySelector('[data-act="closeResume"]') as HTMLElement).focus(); }
 }
 function preloadResume(): void {
   const go = () => buildResume();
