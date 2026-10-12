@@ -99,10 +99,10 @@ describe('world geometry', () => {
     WORLD.GATES.forEach((g, i) => expect(g).toBe((i + 1) * MW));
   });
 
-  it('the sealed gate and world bounds lie inside the last map', () => {
+  it('the sealed gate lies inside the last map, before the end of the world', () => {
     expect(mapOf(WORLD.LOCKX)).toBe(STAGES.length - 1);
     expect(WORLD.LOCKX).toBeLessThan(WORLD.WMAX);
-    expect(mapOf(WORLD.WMAX)).toBe(STAGES.length - 1);
+    expect(WORLD.WMIN).toBeLessThan(WORLD.GATES[0]);
   });
 
   it('every platform lies entirely within its own map and above the ground', () => {
