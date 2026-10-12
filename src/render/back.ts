@@ -6,10 +6,12 @@ import { legacy } from './legacy.ts';
 type Grid = string[][];
 export const BACK_FRAMES = 3; // 0 still, 1-2 climbing cycle
 
-const FACE = new Set(['s', 'd', 'l', 'f', 'e', 'i', 'g', 'm', 'w']);
+export const FACE = new Set(['s', 'd', 'l', 'f', 'e', 'i', 'g', 'm', 'w']);
 const DECOR = new Set(['y', 'W', 'Y']);
-const HEAD0 = 19, HEAD1 = 30, HC0 = 8, HC1 = 27;            // face template rows / cols (same for every tier)
-const ARM_ROWS: [number, number] = [36, 47];
+export const HEAD0 = 19, HEAD1 = 30, HC0 = 8, HC1 = 27;            // face template rows / cols (same for every tier)
+export const ARM_ROWS: [number, number] = [36, 47];
+// Rows each arm (left, right) is raised by, per frame: still = both up 2, climbing = alternate 4 / 1.
+export const ARM_LIFT: [number, number][] = [[2, 2], [4, 1], [1, 4]];
 const ARMS: [number, number][] = [[7, 10], [25, 28]];       // left / right sleeve + hand columns
 
 const memo: Record<string, Grid> = {};
@@ -85,8 +87,8 @@ export function backGrid(tier: number, frame: number): Grid {
     for (let x = 18 - 10 - 1; x <= 17 + 10 + 1; x++) if (y1 + 1 < H) g[y1 + 1][x] = 'k';
   }
 
-  // 5. arms back on top, raised: still = both up 2, climbing = alternate 4 / 1
-  const lift = frame === 0 ? [2, 2] : frame === 1 ? [4, 1] : [1, 4];
+  // 5. arms back on top, raised (ARM_LIFT)
+  const lift = ARM_LIFT[frame];
   arms.forEach((px, i) => { for (const [x, y, c] of px) { const ty = y - lift[i]; if (ty >= 0) g[ty][x] = c; } });
 
   memo[key] = g;
