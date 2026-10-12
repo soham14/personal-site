@@ -20,10 +20,22 @@
 <link rel="icon" href="./favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#0b1330">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>html,body{margin:0;height:100%;background:#0b1330;overflow:hidden}#game{position:fixed;inset:0}</style>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>html,body{margin:0;height:100%;background:#0b1330;overflow:hidden}#game{position:fixed;inset:0}
+#boot{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:linear-gradient(#0b1330,#101c44 60%,#172756);color:#f4f1e8;font-family:'Pixelify Sans',ui-monospace,Menlo,monospace;transition:opacity .35s ease}
+#boot.gone{opacity:0;pointer-events:none}
+#boot .n{font-size:clamp(40px,9vw,76px);font-weight:700;letter-spacing:6px;text-shadow:5px 5px 0 #000}
+#boot .s{font-size:clamp(13px,3vw,18px);letter-spacing:3px;color:#f2b632}
+#boot .bar{width:min(260px,64vw);height:14px;border:3px solid #f2b632;box-shadow:3px 3px 0 #000;background:#0f1226;overflow:hidden}
+#boot .bar i{display:block;height:100%;width:30%;background:#f2b632;animation:bootbar 1.1s steps(8) infinite}
+#boot .st{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(#f4f1e8 1.5px,transparent 1.6px),radial-gradient(#f2b632 1.5px,transparent 1.6px);background-size:97px 89px,151px 137px;background-position:13px 21px,61px 7px;opacity:.55}
+@keyframes bootbar{0%{transform:translateX(-100%)}100%{transform:translateX(340%)}}
+@media (prefers-reduced-motion:reduce){#boot .bar i{animation:none;width:60%}}
+</style>
 </head>
 <body>
+<div id="boot" role="status" aria-label="Loading"><div class="st"></div><div class="n">SOHAM</div><div class="s">CAREER QUEST · LOADING</div><div class="bar"><i></i></div></div>
 <div id="game"></div>
 <div id="ui"></div>
 <noscript><p style="color:#fff;font-family:monospace;padding:20px">This site is a small game. <a style="color:#ffd166" href="./resume/">Read the résumé</a> instead.</p></noscript>

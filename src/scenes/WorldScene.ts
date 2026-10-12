@@ -124,6 +124,11 @@ export class WorldScene extends Phaser.Scene {
 
     this.makeHero();
     this.ready = true;
+    // Fade out the HTML loading screen once the first frame of the world is drawn.
+    this.time.delayedCall(60, () => {
+      const b = document.getElementById('boot');
+      if (b) { b.classList.add('gone'); setTimeout(() => b.remove(), 400); }
+    });
     this.layout();
   }
 
