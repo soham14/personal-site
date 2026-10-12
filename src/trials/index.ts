@@ -10,6 +10,7 @@ import { createHex } from './hex.ts';
 import { createLan } from './lan.ts';
 import { createRush } from './rush.ts';
 import { createStk } from './stk.ts';
+import { npcCanvas, heroCrop } from '../render/textures.ts';
 
 const KIND_NAME: Record<TrialKind, string> = { hex: 'Hex Lock', lan: 'Lantern Match', rush: 'Five-Star Rush', stk: 'Keep Leveling' };
 const START_LOG: Record<TrialKind, string> = {
@@ -78,7 +79,16 @@ export function initTrials(root: HTMLElement): void {
     const w = stdWindow(P, 'Trial from ' + info.name, 'TRIAL · ' + info.name, isStk ? 'Not now' : 'Skip trial', close);
     const top = el('div', 'display:flex;flex-wrap:wrap;gap:16px;padding:16px;');
     const m = MAPS[TRIALS[kind].mentor];
-    const port = el('div', 'flex:none;width:104px;height:104px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;overflow:hidden;background:' + m.port + ';border:3px solid #1b2040;box-shadow:inset 2px 2px 0 ' + m.portHi + ';' + fontP + 'font-size:48px;font-weight:700;color:' + m.a + ';', info.short.charAt(0));
+    const port = el('div', 'flex:none;width:104px;height:104px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;overflow:hidden;background:' + m.port + ';border:3px solid #1b2040;box-shadow:inset 2px 2px 0 ' + m.portHi + ';');
+    {
+      // Mentor portrait, framed the same way as the dialogue box
+      const mi = TRIALS[kind].mentor;
+      const cr = heroCrop(3, 3, 98, 98);
+      cr.t -= [10, 20, 20, 18][mi] || 0;
+      const c = npcCanvas(mi, 3, cr);
+      c.style.cssText = 'display:block;width:100%;height:100%;image-rendering:pixelated;';
+      port.append(c);
+    }
     port.setAttribute('aria-hidden', 'true');
     const txtBox = el('div', 'flex:1 1 220px;min-width:0;');
     txtBox.append(

@@ -40,7 +40,7 @@ function hydrateSprites(root: HTMLElement): void {
     if (e.dataset.portraitNpc === '') return;
     const i = Number(e.dataset.portraitNpc) || 0;
     const cr = heroCrop(3, 3, 104, 104);
-    cr.t -= [0, 20, 20, 0][i] || 0; // Amelia and Tirumal sit low in the frame; lift them to center
+    cr.t -= [10, 20, 20, 18][i] || 0; // Amelia and Tirumal sit low in the frame; lift them to center
     put(e, npcCanvas(i, 3, cr));
   });
 }
