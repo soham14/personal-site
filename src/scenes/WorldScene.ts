@@ -265,10 +265,25 @@ export class WorldScene extends Phaser.Scene {
     const hasB = b.nxt >= 0 && b.t > 0.003;
     const col = (k: number) => hasB ? lerpHex(MAPS[b.cur].sky[k], MAPS[b.nxt].sky[k], b.t) : hex(MAPS[b.cur].sky[k]);
     g.clear();
-    g.fillStyle(col(0)); g.fillRect(0, 0, W, H);
-    const h2 = Math.min(370, H), h3 = Math.min(213, H);
-    g.fillStyle(col(1)); g.fillRect(0, H - h2, W, h2);
-    g.fillStyle(col(2)); g.fillRect(0, H - h3, W, h3);
+    // smooth vertical gradient (no visible bands): top -> mid at 370px above the bottom -> low at 213px
+    const y1 = Math.max(0, H - 370), y2 = Math.max(y1, H - 213);
+    const c0 = col(0), c1 = col(1), c2 = col(2);
+    const grad = (ya: number, yb: number, a: number, b2: number) => {
+      if (yb <= ya) return;
+      // strips instead of fillGradientStyle so it also works with the Canvas renderer
+      const step = 4;
+      for (let y = ya; y < yb; y += step) {
+        const t = (y - ya) / (yb - ya);
+        const r = ((a >> 16) & 255) + (((b2 >> 16) & 255) - ((a >> 16) & 255)) * t;
+        const gg = ((a >> 8) & 255) + (((b2 >> 8) & 255) - ((a >> 8) & 255)) * t;
+        const bb = (a & 255) + ((b2 & 255) - (a & 255)) * t;
+        g.fillStyle((Math.round(r) << 16) | (Math.round(gg) << 8) | Math.round(bb));
+        g.fillRect(0, y, W, Math.min(step, yb - y));
+      }
+    };
+    grad(0, y1, c0, c1);
+    grad(y1, y2, c1, c2);
+    g.fillStyle(c2); g.fillRect(0, y2, W, H - y2);
   }
 
   private drawHero(dt: number) {
