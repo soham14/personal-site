@@ -3,16 +3,71 @@
 import { Layer, el, fontP, sfx, log, sty, txt, SR, lerpColor, isoCube, viewW, type Part } from './dom.ts';
 import { palette, titleBar } from './shell.ts';
 import { state } from '../state.ts';
-import type { TrialCtx, TrialGame } from './types.ts';
+import { EXP_BASE } from '../content.ts';
+import type { TrialCtx, TrialGame, TrialResult } from './types.ts';
 
-const C = { W: 640, H: 440, G: 412, BH: 26, W0: 190, PERFECT: 4 };
+/** Play-area geometry: size, ground line, block height, starting width, perfect-drop tolerance, slider margin from the walls. */
+export const STK = { W: 640, H: 440, G: 412, BH: 26, W0: 190, PERFECT: 4, EDGE: 8 };
+const C = STK;
+/** Floors needed for the trial's title. */
+export const STK_TITLE_FLOORS = 20;
+/** Most EXP bonus Keep Leveling can ever add, and the "to next advancement" percent it never passes. */
+export const EXP_BONUS_MAX = 56;
+export const EXP_CEIL = 99;
+
+/** Slider speed (px/s) at a given height. */
+export function slideSpeed(floors: number): number {
+  return Math.min(340, 170 + 16 * Math.floor(floors / 5));
+}
+
+/** Accumulated EXP bonus after a run of `floors` floors. */
+export function stkExpBonus(prev: number, floors: number): number {
+  return Math.min(EXP_BONUS_MAX, prev + Math.floor(floors / 5));
+}
+
+/** Sound rating (1-5) for a run. */
+export function stkRating(f: number): number {
+  return f >= 30 ? 5 : (f >= 20 ? 4 : (f >= 12 ? 3 : (f >= 5 ? 2 : 1)));
+}
+
+export interface Landing { cx: number; w: number; combo: number; perfect: boolean }
+/**
+ * Where a block dropped at `mx` (width `mw`) lands on `top`: null on a miss (almost no overlap);
+ * a perfect drop snaps onto the top, keeps the width and grows the combo (every third one widens, up to W0);
+ * otherwise only the overlap remains and the combo resets.
+ */
+export function landBlock(top: { cx: number; w: number }, mx: number, mw: number, combo: number): Landing | null {
+  const nl = Math.max(mx - mw / 2, top.cx - top.w / 2), nr = Math.min(mx + mw / 2, top.cx + top.w / 2), ov = nr - nl;
+  if (ov < 2) return null;
+  if (Math.abs(mx - top.cx) <= C.PERFECT) {
+    const c = combo + 1;
+    return { cx: top.cx, w: c % 3 === 0 ? Math.min(C.W0, mw + 10) : mw, combo: c, perfect: true };
+  }
+  return { cx: (nl + nr) / 2, w: ov, combo: 0, perfect: false };
+}
+
+/** True if a row whose top is at y (view coordinates) is at least partly inside the play area. */
+export function rowVisible(y: number): boolean {
+  return y > -C.BH && y < C.H;
+}
+
+/** Left x of a "Lv." tag: right of the block when it fits, otherwise left of it. */
+export function levelTagX(cx: number, w: number): number {
+  return cx + w / 2 + 8 + 50 <= C.W ? cx + w / 2 + 8 : cx - w / 2 - 58;
+}
+
+/** The result of a run of `f` floors given the EXP bonus banked so far. */
+export function stkResult(f: number, expBonus: number): TrialResult {
+  const eb = stkExpBonus(expBonus, f);
+  return { won: true, score: f, stars: 0, bonus: 0, floors: f, exp: f * 50, capped: EXP_BASE + eb >= EXP_CEIL, title: f >= STK_TITLE_FLOORS };
+}
 const f1 = (v: number) => Math.round(v * 10) / 10;
 let starMemo: { x: number; y: number; z: number; tw: boolean; o: number }[] | null = null;
 
 export function createStk(ctx: TrialCtx): TrialGame {
   const g = {
     phase: 'splay' as 'splay' | 'sover', blocks: [{ cx: C.W / 2, w: C.W0 }], floors: 0, combo: 0, mw: C.W0,
-    mx: C.W0 / 2 + 8, dir: 1, side: -1, cam: 0, over: 0, clock: 0,
+    mx: C.W0 / 2 + C.EDGE, dir: 1, side: -1, cam: 0, over: 0, clock: 0,
     pieces: [] as { cx: number; w: number; y: number; vy: number; vx: number; rot: number; vr: number; age: number }[],
     rings: [] as { cx: number; w: number; ys: number; age: number }[],
     pops: [] as { t: string; cx: number; ys: number; age: number; c: string }[]
@@ -56,11 +111,11 @@ export function createStk(ctx: TrialCtx): TrialGame {
     if (g.phase !== 'splay') return;
     const top = g.blocks[g.floors];
     const L = g.mx - g.mw / 2, R = g.mx + g.mw / 2, TL = top.cx - top.w / 2, TR = top.cx + top.w / 2;
-    const nl = Math.max(L, TL), nr = Math.min(R, TR), ov = nr - nl;
+    const land = landBlock(top, g.mx, g.mw, g.combo);
     const k = g.floors + 1;
     const ys = C.G - (k + 1) * C.BH;
     const piece = (l: number, r: number, dirn: number) => g.pieces.push({ cx: (l + r) / 2, w: r - l, y: ys, vy: 0, vx: dirn * 46, rot: 0, vr: dirn * (110 + Math.random() * 90), age: 0 });
-    if (ov < 2) {
+    if (!land) {
       piece(L, R, g.mx >= top.cx ? 1 : -1);
       g.combo = 0;
       g.phase = 'sover';
@@ -70,18 +125,14 @@ export function createStk(ctx: TrialCtx): TrialGame {
       render();
       return;
     }
-    let cx: number, w: number;
-    if (Math.abs(g.mx - top.cx) <= C.PERFECT) {
-      cx = top.cx; w = g.mw;
-      g.combo += 1;
-      if (g.combo % 3 === 0) w = Math.min(C.W0, w + 10);
+    const { cx, w } = land;
+    g.combo = land.combo;
+    if (land.perfect) {
       g.rings.push({ cx, w, ys, age: 0 });
       g.pops.push({ t: 'Perfect!', cx, ys, age: 0, c: '#e8eaf0' });
       sfx('sdrop');
       sfx('sperf', g.combo, 0, 0.04);
     } else {
-      cx = (nl + nr) / 2; w = ov;
-      g.combo = 0;
       if (L < TL) piece(L, TL, -1);
       if (R > TR) piece(TR, R, 1);
       sfx('sdrop');
@@ -93,7 +144,7 @@ export function createStk(ctx: TrialCtx): TrialGame {
     if (k % 10 === 0) g.pops.push({ t: 'Lv. ' + k, cx: Math.max(60, Math.min(C.W - 60, cx)), ys: ys - 30, age: 0, c: '#ffd166' });
     g.mw = w;
     g.side = -g.side;
-    g.mx = g.side > 0 ? C.W - w / 2 - 8 : w / 2 + 8;
+    g.mx = g.side > 0 ? C.W - w / 2 - C.EDGE : w / 2 + C.EDGE;
     g.dir = g.side > 0 ? -1 : 1;
     render();
   }
@@ -119,15 +170,14 @@ export function createStk(ctx: TrialCtx): TrialGame {
         (gold ? 'inset 0 3px 0 #ffd166,inset 0 -3px 0 #ffd166,inset 3px 0 0 #ffd166,inset -3px 0 0 #b8841c;' : 'inset 0 3px 0 #c9ccd3,inset 3px 0 0 #8d9099,inset -3px -3px 0 #1c1c1f;') });
       bl.push({ s: 'position:absolute;left:' + f1(cx - w / 2 + 6) + 'px;top:' + f1(y + 6) + 'px;width:' + f1(Math.max(0, w - 12)) + 'px;height:12px;background:' + (k % 2 ? '#3a3a40' : '#34343a') + ';' });
       if (gold) {
-        const right = cx + w / 2 + 8 + 50 <= C.W;
-        tg.push({ t: 'Lv. ' + k, s: 'position:absolute;left:' + f1(right ? cx + w / 2 + 8 : cx - w / 2 - 58) + 'px;top:' + f1(y + 5) + 'px;width:50px;height:16px;line-height:16px;text-align:center;background:#ffd166;color:#2b2b2e;' + fontP + 'font-size:11px;font-weight:700;letter-spacing:1px;box-shadow:2px 2px 0 #000;' });
+        tg.push({ t: 'Lv. ' + k, s: 'position:absolute;left:' + f1(levelTagX(cx, w)) + 'px;top:' + f1(y + 5) + 'px;width:50px;height:16px;line-height:16px;text-align:center;background:#ffd166;color:#2b2b2e;' + fontP + 'font-size:11px;font-weight:700;letter-spacing:1px;box-shadow:2px 2px 0 #000;' });
       }
     };
     bl.push({ s: 'position:absolute;left:0px;top:' + f1(C.G + cam) + 'px;width:' + C.W + 'px;height:80px;background:#14172b;border-top:3px solid #4a4a52;' });
     bl.push({ s: 'position:absolute;left:150px;top:' + f1(C.G + cam) + 'px;width:340px;height:10px;background:#34343a;box-shadow:inset 0 3px 0 #8d9099;' });
     g.blocks.forEach((b, k) => {
       const y = C.G - (k + 1) * C.BH + cam;
-      if (y > -C.BH && y < C.H) body(b.cx, b.w, y, k);
+      if (rowVisible(y)) body(b.cx, b.w, y, k);
     });
     if (g.phase === 'splay') body(g.mx, g.mw, C.G - (g.floors + 2) * C.BH + cam, g.floors + 1);
     blocks.set(bl);
@@ -154,10 +204,9 @@ export function createStk(ctx: TrialCtx): TrialGame {
 
   function finish() {
     const f = g.floors;
-    const eb = Math.min(56, state.expBonus + Math.floor(f / 5));
     log('[System] Keep Leveling: ' + f + ' floors');
-    sfx('rate', f >= 30 ? 5 : (f >= 20 ? 4 : (f >= 12 ? 3 : (f >= 5 ? 2 : 1))));
-    ctx.finish({ won: true, score: f, stars: 0, bonus: 0, floors: f, exp: f * 50, capped: 95 + eb >= 99, title: f >= 20 });
+    sfx('rate', stkRating(f));
+    ctx.finish(stkResult(f, state.expBonus));
   }
 
   render();
@@ -166,8 +215,8 @@ export function createStk(ctx: TrialCtx): TrialGame {
     step(dt) {
       g.clock += dt;
       if (g.phase === 'splay') {
-        const v = Math.min(340, 170 + 16 * Math.floor(g.floors / 5));
-        const lo = g.mw / 2 + 8, hi = C.W - g.mw / 2 - 8;
+        const v = slideSpeed(g.floors);
+        const lo = g.mw / 2 + C.EDGE, hi = C.W - g.mw / 2 - C.EDGE;
         g.mx += g.dir * v * dt;
         if (g.mx >= hi) { g.mx = Math.max(lo, hi - (g.mx - hi)); g.dir = -1; }
         else if (g.mx <= lo) { g.mx = Math.min(hi, lo + (lo - g.mx)); g.dir = 1; }

@@ -9,7 +9,7 @@ import type { TrialGame, TrialResult } from './types.ts';
 import { createHex } from './hex.ts';
 import { createLan } from './lan.ts';
 import { createRush } from './rush.ts';
-import { createStk } from './stk.ts';
+import { createStk, stkExpBonus } from './stk.ts';
 import { npcCanvas, heroCrop } from '../render/textures.ts';
 
 const KIND_NAME: Record<TrialKind, string> = { hex: 'Hex Lock', lan: 'Lantern Match', rush: 'Five-Star Rush', stk: 'Keep Leveling' };
@@ -84,7 +84,7 @@ export function initTrials(root: HTMLElement): void {
       // Mentor portrait, framed the same way as the dialogue box
       const mi = TRIALS[kind].mentor;
       const cr = heroCrop(3, 3, 98, 98);
-      cr.t -= [10, 20, 20, 18][mi] || 0;
+      cr.t -= [10, 20, 20, 18][mi];
       const c = npcCanvas(mi, 3, cr);
       c.style.cssText = 'display:block;width:100%;height:100%;image-rendering:pixelated;';
       port.append(c);
@@ -122,7 +122,7 @@ export function initTrials(root: HTMLElement): void {
     const best = Object.assign({}, state.best);
     best[kind] = Math.max(best[kind], r.score);
     const patch: Partial<typeof state> = { best };
-    if (kind === 'stk') patch.expBonus = Math.min(56, state.expBonus + Math.floor((r.floors || 0) / 5));
+    if (kind === 'stk') patch.expBonus = stkExpBonus(state.expBonus, r.floors || 0);
     const unlocked = kind === 'stk' ? !!r.title : r.stars === 5;
     const title = TRIALS[kind].title;
     if (unlocked) patch.titles = state.titles.filter((t) => t !== title).concat([title]);
@@ -182,10 +182,10 @@ export function initTrials(root: HTMLElement): void {
 
   // Continue after the results: a gate trial walks the player through the gate so normal advancement plays.
   function cont() {
-    const r = result;
+    const r = result!;
     const wasGate = gate;
     close();
-    if (wasGate) emit('walkTo', { x: TRIALS[kind].gateX + 20, bonus: r && r.won ? r.bonus : 0, kind });
+    if (wasGate) emit('walkTo', { x: TRIALS[kind].gateX + 20, bonus: r.won ? r.bonus : 0, kind });
   }
 
   // Close X / Esc: prompt = skip, play = quit (discard), results = continue.
