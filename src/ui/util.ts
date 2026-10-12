@@ -17,7 +17,7 @@ export function expPct(): number {
 export function titleSkin(t: string): { bg: string; tx: string; bd: string } {
   if (t === 'Seal Breaker') return { bg: '#f2b632', tx: '#1d3a6b', bd: '#1b2040' };
   if (t === 'Lamplighter') return { bg: '#c8323a', tx: '#fff1d6', bd: '#ffb454' };
-  if (t === 'Always Leveling') return { bg: '#c9ccd3', tx: '#2b2b2e', bd: '#2b2b2e' };
+  if (t === 'Always Growing') return { bg: '#c9ccd3', tx: '#2b2b2e', bd: '#2b2b2e' };
   return { bg: '#c8323a', tx: '#f6ecd2', bd: '#1b2040' };
 }
 

@@ -3,6 +3,7 @@
 import * as Phaser from 'phaser';
 import { legacy } from './legacy.ts';
 import { paintCss } from './css.ts';
+import { backRuns, BACK_FRAMES } from './back.ts';
 
 export const HERO_W = 56, HERO_H = 72; // the mockup's sprite box
 export const POSES = 8;                // 0 idle, 1-4 walk cycle, 5 jump tuck, 6-7 ladder
@@ -110,7 +111,7 @@ export function drawBook(ctx: CanvasRenderingContext2D, tier: number) {
 
 /**
  * Register every sprite texture with Phaser:
- *   hero-{tier}-base-{pose}, hero-{tier}-cape, hero-{tier}-tail, hero-{tier}-book, npc-{i}
+ *   hero-{tier}-base-{pose}, hero-{tier}-back-{0 still|1-2 climb}, hero-{tier}-cape, hero-{tier}-tail, hero-{tier}-book, npc-{i}
  * Textures are painted at `res` pixels per CSS pixel (default 2 for crisp edges) and displayed at 1/res.
  */
 export const TEX_RES = 2;
@@ -126,6 +127,10 @@ export function buildSpriteTextures(scene: Phaser.Scene) {
     const S = v2Sprite(t);
     if (S.layers.cape) add('hero-' + t + '-cape', boxCanvas(TEX_RES, undefined, (ctx) => drawHeroLayer(ctx, t, 'cape')));
     if (S.layers.tail) add('hero-' + t + '-tail', boxCanvas(TEX_RES, undefined, (ctx) => drawHeroLayer(ctx, t, 'tail')));
+    for (let f = 0; f < BACK_FRAMES; f++) add('hero-' + t + '-back-' + f, boxCanvas(TEX_RES, undefined, (ctx) => {
+      const B = v2Box(t), P = B.P;
+      for (const r of backRuns(t, f)) { ctx.fillStyle = r.c; ctx.fillRect(B.ox + r.x * P, B.oy + r.y * P, r.w * P + 0.35, P + 0.35); }
+    }));
     add('hero-' + t + '-book', boxCanvas(TEX_RES, undefined, (ctx) => drawBook(ctx, t)));
   }
   for (let i = 0; i < 4; i++) add('npc-' + i, npcCanvas(i, TEX_RES));

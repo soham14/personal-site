@@ -32,7 +32,9 @@ function hydrateSprites(root: HTMLElement): void {
   });
   root.querySelectorAll<HTMLElement>('[data-portrait]').forEach((e) => {
     const t = Number(e.dataset.portrait) || 0;
-    put(e, heroCanvas(t, 2, { crop: heroCrop(t, 2, 64, 64) }));
+    const cr = heroCrop(t, 2, 64, 64);
+    cr.t -= 18; // lift the sprite so the head sits in the middle of the frame
+    put(e, heroCanvas(t, 2, { crop: cr }));
   });
   root.querySelectorAll<HTMLElement>('[data-portrait-npc]').forEach((e) => {
     if (e.dataset.portraitNpc === '') return;

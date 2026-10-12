@@ -94,7 +94,7 @@ export const TRIALS = {
   hex: { name: 'Hex Lock', mentor: 0, gateX: 960, title: 'Seal Breaker', how: 'Earn 5 stars in Hex Lock' },
   lan: { name: 'Lantern Match', mentor: 1, gateX: 1920, title: 'Lamplighter', how: 'Earn 5 stars in Lantern Match' },
   rush: { name: 'Five-Star Rush', mentor: 2, gateX: 2880, title: 'Five-Star Mage', how: 'Earn 5 stars in Five-Star Rush' },
-  stk: { name: 'Keep Leveling', mentor: 3, gateX: 3750, title: 'Always Leveling', how: 'Reach 20 floors in Keep Leveling' }
+  stk: { name: 'Keep Leveling', mentor: 3, gateX: 3750, title: 'Always Growing', how: 'Reach 20 floors in Keep Leveling' }
 } as const;
 export type TrialKind = keyof typeof TRIALS;
 

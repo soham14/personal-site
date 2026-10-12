@@ -275,7 +275,10 @@ export class WorldScene extends Phaser.Scene {
     const tier = displayTier();
     this.setTier(tier);
     const pose = legPose();
-    this.base.setTexture('hero-' + tier + '-base-' + pose);
+    // on a ladder: back view (2-frame arm cycle while moving); cape / tail / spellbook are folded into or hidden by it
+    if (state.climb) this.base.setTexture('hero-' + tier + '-back-' + (state.climbMoving ? (pose === 7 ? 2 : 1) : 0));
+    else this.base.setTexture('hero-' + tier + '-base-' + pose);
+    { const S0 = v2Sprite(tier); this.cape.setVisible(!!S0.layers.cape && !state.climb); this.tail.setVisible(!!S0.layers.tail && !state.climb); this.book.setVisible(!state.climb); }
     const px = Math.round(state.px), py = Math.round(state.py);
     this.hero.setPosition(px, -(70 + py) - 18);
     // squash / flip (origin at the feet); idle bob 0.9s steps; walk frames 1 and 3 lift 1px
@@ -346,7 +349,7 @@ export class WorldScene extends Phaser.Scene {
     const f = this.fxFront;
     f.clear();
     const bp = (t % 4.2) / 4.2;
-    if (bp > 0.93 && bp < 0.975) for (const b of S.blink) { f.fillStyle(hex(b[4]), 1); f.fillRect(X(b[0]), Y(b[1]), b[2] * P, b[3] * P); }
+    if (!state.climb && bp > 0.93 && bp < 0.975) for (const b of S.blink) { f.fillStyle(hex(b[4]), 1); f.fillRect(X(b[0]), Y(b[1]), b[2] * P, b[3] * P); }
     const bx = (x: number) => x - HERO_W / 2, by = (y: number) => y - HERO_H;
     if (tier === 0) {
       [[12, 62, 2, 2.6, 0xf1e6c8], [22, 66, 2.4, 3, 0xe6d9b5], [36, 63, 2, 2.6, 0xf1e6c8], [46, 66, 2.4, 3, 0xe6d9b5]].forEach((p, i) => {
@@ -386,7 +389,7 @@ export class WorldScene extends Phaser.Scene {
       if (this.titleChip) { this.titleChip.destroy(); this.titleChip = null; }
       if (top) {
         const skin = top === 'Seal Breaker' ? ['#f2b632', '#1d3a6b', '#1b2040'] : top === 'Lamplighter' ? ['#c8323a', '#fff1d6', '#ffb454']
-          : top === 'Always Leveling' ? ['#c9ccd3', '#2b2b2e', '#2b2b2e'] : ['#c8323a', '#f6ecd2', '#1b2040'];
+          : top === 'Always Growing' ? ['#c9ccd3', '#2b2b2e', '#2b2b2e'] : ['#c8323a', '#f6ecd2', '#1b2040'];
         const L = labelTexture(this, top, 'background:' + skin[0] + ';color:' + skin[1] + ';border:2px solid ' + skin[2] + ";box-shadow:2px 2px 0 #000;font-family:'Pixelify Sans',monospace;font-size:11px;font-weight:700;letter-spacing:1px;white-space:nowrap;display:flex;box-sizing:border-box;padding:0 8px;", 8, 20, '700 11px ' + PIX, 1);
         this.titleChip = this.add.image(0, 0, L.key);
         this.hero.add(this.titleChip);

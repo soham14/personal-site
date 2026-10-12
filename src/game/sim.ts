@@ -93,6 +93,7 @@ function beginAdvance(z: number) {
   if (z >= 1 && z <= 3) scheduleReward(z - 1);
 }
 let advId = 0, rewardId = 0;
+let sealArmed = true;
 
 /** After the JOB ADVANCED banner: QUEST COMPLETE card (3.3s), then the crest flies to the PROFILE button. */
 function scheduleReward(idx: number) {
@@ -217,8 +218,13 @@ export function tick(dtIn: number): boolean {
   }
   s.px = Math.max(C.WMIN + 20, Math.min(C.WMAX - 20, s.px));
 
+  // The sealed gate is a solid wall: stop flush against it (no teleport). It only "bumps"
+  // (log + trial offer) on fresh contact; walking a little way back re-arms it.
   let sealed = false;
-  if (s.px > C.LOCKX) { s.px = C.LOCKX - 60; s.target = null; s.pendingTalk = null; sealed = true; }
+  if (s.px >= C.LOCKX) {
+    s.px = C.LOCKX; s.target = null; s.pendingTalk = null;
+    if (sealArmed) { sealed = true; sealArmed = false; }
+  } else if (s.px < C.LOCKX - 40) sealArmed = true;
 
   const lad = ladderAt(s.px);
   if (!s.climbing && lad && !lock && s.t >= s.noGrabUntil) {
