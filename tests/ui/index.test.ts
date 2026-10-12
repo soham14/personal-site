@@ -34,11 +34,14 @@ beforeEach(() => {
   fetchReturns(RESUME_HTML);
   vi.stubGlobal('fetch', fetchMock);
   resetFlips();
+  mount();
+});
+function mount() {
   root = document.createElement('div');
   root.id = 'ui';
   document.body.appendChild(root);
   initUI(root);
-});
+}
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
@@ -556,19 +559,20 @@ describe('résumé overlay', () => {
   });
 
   it('is preloaded hidden in idle time after the page loads', () => {
+    // the idle-callback API is looked up when the UI mounts, so mount again with it present
     const ric = vi.fn((cb: () => void) => cb());
-    // set on every global alias of the window (jsdom's own window and the test global)
-    const hosts = [globalThis, window, document.defaultView] as any[];
-    hosts.forEach((h) => { h.requestIdleCallback = ric; });
+    (window as any).requestIdleCallback = ric;
     try {
-      const t0 = vi.getTimerCount();
+      document.body.innerHTML = '';
+      mount();
+      expect(overlay()).toBeNull();
       window.dispatchEvent(new Event('load'));
-      expect(JSON.stringify({ built: !!overlay(), ricType: typeof (window as any).requestIdleCallback, isRic: (window as any).requestIdleCallback === ric, same: window === (globalThis as any), dv: document.defaultView === window, ricDv: typeof (document.defaultView as any).requestIdleCallback, ricG: typeof (globalThis as any).requestIdleCallback, ael: window.addEventListener === (globalThis as any).addEventListener, desc: String(Object.getOwnPropertyDescriptor(globalThis, 'requestIdleCallback') && Object.keys(Object.getOwnPropertyDescriptor(globalThis, 'requestIdleCallback')!)), descW: String(Object.getOwnPropertyDescriptor(window, 'requestIdleCallback') && Object.keys(Object.getOwnPropertyDescriptor(window, 'requestIdleCallback')!)) })).toBe('debug');
       expect(ric).toHaveBeenCalled();
       expect(overlay().style.visibility).toBe('hidden');
+      expect(state.resumeOpen).toBe(false);
       expect(fetchMock).toHaveBeenCalledTimes(1);
     } finally {
-      hosts.forEach((h) => { delete h.requestIdleCallback; });
+      delete (window as any).requestIdleCallback;
     }
   });
 
