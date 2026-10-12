@@ -1,12 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { initUI } from '../../src/ui/index.ts';
 import { resetFlips } from '../../src/ui/profile.ts';
 import { expPct } from '../../src/ui/util.ts';
 import { state, setState, on, emit, type EventName } from '../../src/state.ts';
 import { PROFILE, STAGES, MAPS, MENTORS, PORTAL, TRIALS, WORLD, SKILLS, type TrialKind } from '../../src/content.ts';
 
-const RESUME_HTML = readFileSync(new URL('../../resume/index.html', import.meta.url), 'utf8');
+import RESUME_HTML from '../../resume/index.html?raw'; // the real standalone résumé page
 const PORTAL_I = MENTORS.length; // dialogue index used for the portal
 const KINDS = Object.keys(TRIALS) as TrialKind[];
 const trialOfMentor = (m: number) => KINDS.find((k) => TRIALS[k].mentor === m)!;
