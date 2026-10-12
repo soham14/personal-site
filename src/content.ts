@@ -40,7 +40,7 @@ export const STAGES = [
     dates: 'Oct 2022 – Present', years: '2022–present', team: 'Two teams: Social, and Internal Tooling',
     highlights: [
       'Upgraded deployment velocity for the entire organization',
-      'Shipped a large, high-visibility feature spanning 4 teams',
+      'Project-led the shipment of a large, high-visibility feature spanning 4 teams',
       'Managed an intern'
     ],
     outfit: 'Obsidian robe, silver cape',
