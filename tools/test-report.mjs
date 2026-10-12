@@ -6,6 +6,9 @@ try {
   out.push(`TESTS: ${r.numPassedTests} passed, ${r.numFailedTests} failed, ${r.numTotalTests} total`);
   for (const f of r.testResults) for (const t of f.assertionResults) if (t.status === 'failed')
     out.push(`FAIL ${f.name.replace(process.cwd() + '/', '')} :: ${t.fullName}\n  ${(t.failureMessages || []).join('\n').split('\n').slice(0, 12).join('\n  ')}`);
+  const files = r.testResults.map((f) => ({ name: f.name.replace(process.cwd() + '/', ''), ms: (f.endTime - f.startTime), n: f.assertionResults.length }))
+    .sort((a, b) => b.ms - a.ms);
+  out.push('FILE DURATIONS (ms, tests):\n' + files.map((f) => `  ${String(Math.round(f.ms)).padStart(6)}  ${String(f.n).padStart(4)}  ${f.name}`).join('\n'));
   for (const f of r.testResults) if (f.status === 'failed' && !f.assertionResults.length) out.push(`FILE FAILED ${f.name}: ${f.message}`);
 } catch (e) { out.push('no test-results.json: ' + e.message); }
 try {
@@ -24,5 +27,6 @@ try {
   }
 } catch (e) { out.push('no coverage: ' + e.message); }
 try { const t = fs.readFileSync('typecheck.txt', 'utf8').trim(); out.unshift('TYPECHECK:\n' + (t.includes('error TS') ? t.split('\n').filter((l) => l.includes('error TS')).slice(0, 80).join('\n') : 'ok')); } catch {}
+try { out.unshift('BENCH:\n' + fs.readFileSync('bench.txt', 'utf8')); } catch {}
 fs.writeFileSync('ci-report.txt', out.join('\n') + '\n');
 console.log(out.join('\n'));
