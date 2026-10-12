@@ -9,7 +9,11 @@ let hitTest: ((clientX: number, clientY: number) => number) | null = null;
 /** WorldScene registers this: returns the mentor/portal index under a client point, or -1. */
 export function setWorldHitTest(fn: (clientX: number, clientY: number) => number) { hitTest = fn; }
 
-const tp = { walkPtr: null as number | null, rectL: 0, rectW: 1, side: null as 'left' | 'right' | null, anchorY: 0, anchorT: 0, tapId: null as number | null, tapX: 0, tapY: 0, tapT: 0 };
+/** Touch gestures: a swipe up of more than SWIPE_PX within SWIPE_MS jumps; a second finger lifted within TAP_MS and TAP_SLOP px jumps. */
+export const SWIPE_PX = 40, SWIPE_MS = 250, TAP_MS = 200, TAP_SLOP = 15;
+
+const tpInit = () => ({ walkPtr: null as number | null, rectL: 0, rectW: 1, side: null as 'left' | 'right' | null, anchorY: 0, anchorT: 0, tapId: null as number | null, tapX: 0, tapY: 0, tapT: 0 });
+const tp = tpInit();
 
 function sfx(name: string, a?: unknown) { emit('sfx', { name, a }); }
 
@@ -136,8 +140,8 @@ function onPtrMove(e: PointerEvent, el: HTMLElement) {
   const side = e.clientX < tp.rectL + tp.rectW / 2 ? 'left' : 'right';
   if (side !== tp.side) { setSide(side); setState({ half: side }); }
   // Swipe up: more than ~40px within ~250ms of the anchor = one jump
-  if (now - tp.anchorT > 250) { tp.anchorY = e.clientY; tp.anchorT = now; }
-  else if (tp.anchorY - e.clientY > 40) { sim.jumpReq = true; tp.anchorY = e.clientY; tp.anchorT = now; }
+  if (now - tp.anchorT > SWIPE_MS) { tp.anchorY = e.clientY; tp.anchorT = now; }
+  else if (tp.anchorY - e.clientY > SWIPE_PX) { sim.jumpReq = true; tp.anchorY = e.clientY; tp.anchorT = now; }
 }
 
 function onPtrEnd(e: PointerEvent) {
@@ -146,7 +150,7 @@ function onPtrEnd(e: PointerEvent) {
   if (e.type === 'pointerleave' && e.pointerId === tp.walkPtr) return;
   if (e.pointerId === tp.walkPtr) { tp.walkPtr = null; setSide(null); setState({ half: null }); return; }
   if (e.pointerId === tp.tapId) {
-    const quick = e.type === 'pointerup' && (e.timeStamp - tp.tapT) < 200 && Math.abs(e.clientX - tp.tapX) < 15 && Math.abs(e.clientY - tp.tapY) < 15;
+    const quick = e.type === 'pointerup' && (e.timeStamp - tp.tapT) < TAP_MS && Math.abs(e.clientX - tp.tapX) < TAP_SLOP && Math.abs(e.clientY - tp.tapY) < TAP_SLOP;
     tp.tapId = null;
     if (quick) sim.jumpReq = true;
   }
@@ -156,7 +160,7 @@ function onPtrEnd(e: PointerEvent) {
 const ACC = '#ffd166';
 const PAD_BTN = 'display:flex;align-items:center;justify-content:center;box-sizing:border-box;border:3px solid ' + ACC + ';border-radius:0;background:rgba(27,32,64,0.78);color:' + ACC + ";font-family:'Pixelify Sans',monospace;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;box-shadow:3px 3px 0 #000;touch-action:none;height:48px;padding:0 14px;";
 
-function mountPad(ui: HTMLElement) {
+function mountPad(ui: HTMLElement): () => void {
   const wrapL = document.createElement('div');
   wrapL.style.cssText = 'position:absolute;left:16px;bottom:16px;z-index:9;touch-action:none;pointer-events:auto;';
   const jump = document.createElement('button');
@@ -188,32 +192,43 @@ function mountPad(ui: HTMLElement) {
     wrapR.style.display = show ? '' : 'none';
     wrapL.style.display = state.trial !== null ? 'none' : '';
   };
-  subscribe(sync);
+  const unsub = subscribe(sync);
   sync();
+  return () => { unsub(); wrapL.remove(); wrapR.remove(); };
 }
 
-let mounted = false;
-/** Wire keyboard (window), pointer (the #game element) and the on-screen pad (in #ui). Idempotent. */
+let teardown: (() => void) | null = null;
+/** Wire keyboard (window), pointer (the #game element) and the on-screen pad (in #ui). Idempotent until disposeInput(). */
 export function initInput(gameEl: HTMLElement = document.getElementById('game')!, ui: HTMLElement = document.getElementById('ui')!) {
-  if (mounted) return;
-  mounted = true;
+  if (teardown) return;
+  const ac = new AbortController();
+  const o = { signal: ac.signal };
   setState({ isTouch: typeof window !== 'undefined' && 'ontouchstart' in window && navigator.maxTouchPoints > 0 && !matchMedia('(pointer: fine)').matches });
-  window.addEventListener('keydown', onKeyDown);
-  window.addEventListener('keyup', onKeyUp);
-  window.addEventListener('blur', onBlur);
+  window.addEventListener('keydown', onKeyDown, o);
+  window.addEventListener('keyup', onKeyUp, o);
+  window.addEventListener('blur', onBlur, o);
   gameEl.style.touchAction = 'none';
-  gameEl.addEventListener('pointerdown', (e) => onPtrDown(e, gameEl));
-  gameEl.addEventListener('pointermove', (e) => onPtrMove(e, gameEl));
-  gameEl.addEventListener('pointerup', onPtrEnd);
-  gameEl.addEventListener('pointercancel', onPtrEnd);
-  gameEl.addEventListener('pointerleave', onPtrEnd);
-  gameEl.addEventListener('contextmenu', (e) => e.preventDefault());
+  gameEl.addEventListener('pointerdown', (e) => onPtrDown(e, gameEl), o);
+  gameEl.addEventListener('pointermove', (e) => onPtrMove(e, gameEl), o);
+  gameEl.addEventListener('pointerup', onPtrEnd, o);
+  gameEl.addEventListener('pointercancel', onPtrEnd, o);
+  gameEl.addEventListener('pointerleave', onPtrEnd, o);
+  gameEl.addEventListener('contextmenu', (e) => e.preventDefault(), o);
   // Opening an overlay drops any held direction (like the mockup's clearInput on trials/dialogue)
   let wasLocked = false;
-  subscribe(() => {
+  const unsubLock = subscribe(() => {
     const l = state.talk !== null || state.profileOpen || state.resumeOpen || state.trial !== null;
     if (l && !wasLocked) { sim.left = false; sim.right = false; sim.up = false; sim.down = false; tp.walkPtr = null; setSide(null); }
     wasLocked = l;
   });
-  if (ui) mountPad(ui);
+  const unmountPad = ui ? mountPad(ui) : null;
+  teardown = () => { ac.abort(); unsubLock(); unmountPad?.(); };
+}
+
+/** Undo initInput: remove every listener and the on-screen pad, forget gestures and the hit-test (tests / a fresh start). */
+export function disposeInput() {
+  teardown?.();
+  teardown = null;
+  hitTest = null;
+  Object.assign(tp, tpInit());
 }
