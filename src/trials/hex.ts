@@ -5,17 +5,18 @@ import { crestDataURL } from '../ui/crests.ts';
 import type { TrialCtx, TrialGame } from './types.ts';
 
 interface Grp { e: number[]; v?: number }
-const HT: Record<string, Grp[]> = {
+/** Tile types: each group is a set of connected edges (K has two separate channels). */
+export const HT: Record<string, Grp[]> = {
   S: [{ e: [0, 3] }],
   B: [{ e: [0, 2] }],
   Y: [{ e: [0, 2, 4] }],
   T: [{ e: [0, 2, 3] }],
   K: [{ e: [0, 2], v: 60 }, { e: [3, 5], v: 240 }]
 };
-interface Tile { ty: string; s: number; p: boolean }
-interface Layout { src: number; seal: number; tiles: Tile[] }
+export interface Tile { ty: string; s: number; p: boolean }
+export interface Layout { src: number; seal: number; tiles: Tile[] }
 const t = (ty: string, s: number, p?: number): Tile => ({ ty, s, p: !!p });
-const LAYOUTS: Layout[] = [
+export const LAYOUTS: Layout[] = [
   { src: 0, seal: 2, tiles: [
     t('B', 1, 1), t('K', 0), t('Y', 1), t('S', 2),
     t('S', 1, 1), t('T', 2), t('B', 3), t('K', 1),
@@ -33,14 +34,16 @@ const LAYOUTS: Layout[] = [
   ] }
 ];
 
-function hexNb(r: number, c: number, e: number): number {
+/** Neighbour index across edge e of the tile at row r, column c, or -1 off the board. */
+export function hexNb(r: number, c: number, e: number): number {
   const odd = r % 2 === 1;
   const dd = [[0, 1], [1, odd ? 1 : 0], [1, odd ? 0 : -1], [0, -1], [-1, odd ? 0 : -1], [-1, odd ? 1 : 0]][e];
   const nr = r + dd[0], nc = c + dd[1];
   return (nr < 0 || nr > 2 || nc < 0 || nc > 3) ? -1 : nr * 4 + nc;
 }
 
-function hexConn(L: Layout, turns: number[]): { lit: boolean[][]; sealed: boolean } {
+/** Flood the light from the source through the rotated tiles: which tile groups are lit, and whether the seal is reached. */
+export function hexConn(L: Layout, turns: number[]): { lit: boolean[][]; sealed: boolean } {
   const lit = L.tiles.map((tl) => HT[tl.ty].map(() => false));
   const edgesOf = (i: number, gi: number) => HT[L.tiles[i].ty][gi].e.map((x) => (x + turns[i]) % 6);
   const groupAt = (i: number, edge: number) => {
@@ -73,15 +76,28 @@ const f2 = (v: number) => Math.round(v * 100) / 100;
 const rad = (dg: number) => dg * Math.PI / 180;
 const cellOf = (i: number) => { const r = Math.floor(i / 4), c = i % 4; return { r, c, l: X0 + c * CW + (r % 2 ? CW / 2 : 0), t: Y0 + r * RS }; };
 
-export function createHex(ctx: TrialCtx): TrialGame {
-  const L = LAYOUTS[Math.floor(Math.random() * 3)];
+/** Pick a layout and scramble it (re-rolling boards that are already sealed). */
+export function dealHex(rand: () => number = Math.random): { L: Layout; turns: number[]; conn: ReturnType<typeof hexConn> } {
+  const L = LAYOUTS[Math.floor(rand() * 3)];
   let turns: number[], conn, guard = 0;
   do {
-    turns = L.tiles.map((tl) => (tl.p ? (tl.s + 1 + Math.floor(Math.random() * 5)) : Math.floor(Math.random() * 6)));
+    turns = L.tiles.map((tl) => (tl.p ? (tl.s + 1 + Math.floor(rand() * 5)) : Math.floor(rand() * 6)));
     conn = hexConn(L, turns);
     guard++;
   } while (conn.sealed && guard < 40);
-  const g = { phase: 'hplay' as 'hplay' | 'hwin', turns, conn, moves: 0, t: 0, time: 45, cur: -1, winT: 0, acc: 1, clock: 0 };
+  return { L, turns, conn };
+}
+
+/** Win score: seconds left plus a bonus for few moves. */
+export function hexScore(secs: number, moves: number): number { return secs * 10 + Math.max(0, 20 - moves) * 5; }
+export function hexStars(sc: number): number { return sc >= 300 ? 5 : (sc >= 220 ? 4 : (sc >= 140 ? 3 : (sc >= 60 ? 2 : 1))); }
+
+/** Seconds on the candle. */
+export const HEX_TIME = 45;
+
+export function createHex(ctx: TrialCtx): TrialGame {
+  const { L, turns, conn } = dealHex();
+  const g = { phase: 'hplay' as 'hplay' | 'hwin', turns, conn, moves: 0, t: 0, time: HEX_TIME, cur: -1, winT: 0, acc: 1, clock: 0 };
 
   // ---- skeleton: an open spellbook ----
   const root = el('div');
@@ -236,7 +252,7 @@ export function createHex(ctx: TrialCtx): TrialGame {
     burst.set(bu);
 
     // candle: wax shortens with the timer, flame flickers
-    const frac = Math.max(0, Math.min(1, g.time / 45));
+    const frac = Math.max(0, Math.min(1, g.time / HEX_TIME));
     const waxH = Math.round(10 + 80 * frac);
     const c = 'position:absolute;left:50%;';
     sty(cn[0], c + 'margin-left:-34px;bottom:' + (waxH - 2) + 'px;width:68px;height:68px;border-radius:50%;background:rgba(255,180,84,' + (0.14 + 0.12 * frac).toFixed(2) + ');animation:glowp 0.9s steps(1) infinite;');
@@ -270,9 +286,9 @@ export function createHex(ctx: TrialCtx): TrialGame {
       ctx.finish({ won: false, score: 0, stars: 0, bonus: 0, moves: g.moves });
       return;
     }
-    const secs = Math.floor(Math.max(0, 45 - g.t));
-    const sc = secs * 10 + Math.max(0, 20 - g.moves) * 5;
-    const stars = sc >= 300 ? 5 : (sc >= 220 ? 4 : (sc >= 140 ? 3 : (sc >= 60 ? 2 : 1)));
+    const secs = Math.floor(Math.max(0, HEX_TIME - g.t));
+    const sc = hexScore(secs, g.moves);
+    const stars = hexStars(sc);
     log('[System] Hex Lock: score ' + sc + ' (' + '★'.repeat(stars) + ')');
     sfx('rate', stars);
     ctx.finish({ won: true, score: sc, stars, bonus: sc * 10, secs, moves: g.moves });
@@ -285,7 +301,7 @@ export function createHex(ctx: TrialCtx): TrialGame {
       g.clock += dt;
       if (g.phase === 'hplay') {
         g.t += dt;
-        g.time = Math.max(0, 45 - g.t);
+        g.time = Math.max(0, HEX_TIME - g.t);
         if (g.time <= 0) { finish(false); return false; }
       } else {
         g.winT += dt;
