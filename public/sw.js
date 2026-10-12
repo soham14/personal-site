@@ -1,5 +1,5 @@
 // Cache-first app shell with background refresh. Bump VERSION to invalidate.
-const VERSION = 'cq-v4';
+const VERSION = 'cq-v5';
 const SCOPE = self.registration.scope; // e.g. https://soham.io/
 const abs = (p) => new URL(p, SCOPE).href;
 const SHELL = ['', 'index.html', 'resume/', 'resume/index.html', 'favicon.svg', 'manifest.webmanifest', 'apple-touch-icon.png'].map(abs);

@@ -31,7 +31,9 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .cq-face{position:absolute;left:0;top:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .cq-resume{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;background:#f6f3ea;pointer-events:auto}
 .cq-resume-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:#f6f3ea;touch-action:pan-y}
-.cq-resume iframe{display:block;width:100%;height:100%;border:0;background:#f6f3ea}
+.cq-resume-scroll{-webkit-user-select:text;user-select:text;color:#1b2040}
+#ui .cq-resume-scroll a{color:#1d3a6b}
+#ui .cq-resume-scroll a:hover{color:#0f1226}
 
 /* Short screens (phone landscape): every pop-up (dialogue, trial, quest card) shrinks by the SAME factor
    (--pz, set in main.ts from the window height) so they stay consistent; profile uses the full height. */
