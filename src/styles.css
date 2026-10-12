@@ -1,3 +1,4 @@
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 /* DOM UI overlays (ported from the mockup's template/CSS). Mounted in #ui above the #game canvas. */
 #ui{position:fixed;inset:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);z-index:2;pointer-events:none;color:#f4f1e8;font-family:'Space Mono',monospace;overflow:hidden}
 #ui a{color:#ffd166}#ui a:hover{color:#fff1c4}
