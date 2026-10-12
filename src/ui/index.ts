@@ -320,7 +320,8 @@ function showReward(idx: number, bonus: number): void {
 // ---------- title chip over the player (camera = mockup's CSS clamp: player near 40% of width) ----------
 function syncTitleChip(): void {
   const chip = slots.title;
-  const t = state.titles.length ? state.titles[state.titles.length - 1] : '';
+  // The game world (WorldScene) draws the title above the hero; drawing it here too doubled it.
+  const t = '';
   if (!t) { if (chip.firstChild) chip.innerHTML = ''; return; }
   if ((chip as any)._t !== t) {
     (chip as any)._t = t;
