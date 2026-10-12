@@ -557,14 +557,16 @@ describe('résumé overlay', () => {
 
   it('is preloaded hidden in idle time after the page loads', () => {
     const ric = vi.fn((cb: () => void) => cb());
-    (window as any).requestIdleCallback = ric;
+    // set on every global alias of the window (jsdom's own window and the test global)
+    const hosts = [globalThis, window, document.defaultView] as any[];
+    hosts.forEach((h) => { h.requestIdleCallback = ric; });
     try {
       window.dispatchEvent(new Event('load'));
       expect(ric).toHaveBeenCalled();
       expect(overlay().style.visibility).toBe('hidden');
       expect(fetchMock).toHaveBeenCalledTimes(1);
     } finally {
-      delete (window as any).requestIdleCallback;
+      hosts.forEach((h) => { delete h.requestIdleCallback; });
     }
   });
 
