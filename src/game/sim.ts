@@ -162,9 +162,9 @@ function locked(paused: boolean) {
   return state.talk !== null || state.profileOpen || state.resumeOpen || state.trial !== null || paused;
 }
 
-/** Advance the simulation by dt seconds (capped at 0.1, physics in 0.02s substeps). Returns true while anything moves. */
+/** Advance the simulation by dt seconds (capped at 0.25, physics in 0.02s substeps). Returns true while anything moves. */
 export function tick(dtIn: number): boolean {
-  const dt = Math.min(0.1, Math.max(0, dtIn));
+  const dt = Math.min(0.25, Math.max(0, dtIn)); // generous cap so slow frames on phones don't slow the game down
   const steps = Math.max(1, Math.ceil(dt / 0.02));
   const s = sim;
   const plats = C.platforms;

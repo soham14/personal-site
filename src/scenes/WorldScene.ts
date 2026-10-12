@@ -31,6 +31,7 @@ export class WorldScene extends Phaser.Scene {
   private t = 0;
   private W = 0; private H = 0;
   private sky!: Phaser.GameObjects.Graphics;
+  private warm = 20;
   private moon!: Phaser.GameObjects.Container;
   private moonDisc!: Phaser.GameObjects.Image;
   private constel!: Phaser.GameObjects.Graphics;
@@ -221,11 +222,12 @@ export class WorldScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number) {
-    const dt = Math.min(0.1, delta / 1000);
+    const dt = Math.min(0.25, delta / 1000);
     this.t += delta / 1000;
     tick(dt);
     this.drawSky();
     if (!this.ready) return;
+    if (this.warm > 0) this.warm--;
     const W = this.W, H = this.H;
     const camL = camLeft(state.px, W);
     const bl = state.blend;
@@ -233,7 +235,10 @@ export class WorldScene extends Phaser.Scene {
     const bt = hasB ? bl.t : 0;
     // parallax sets: A = camera map at 1 - t, B = neighbour at t
     this.tiers.forEach((L, i) => {
-      const a = i === bl.cur ? 1 - bt : (hasB && i === bl.nxt ? bt : 0);
+      let a = i === bl.cur ? 1 - bt : (hasB && i === bl.nxt ? bt : 0);
+      // Warm-up: draw every map's layers nearly invisibly for the first frames so the GPU uploads
+      // their textures at load, instead of stalling later (this was the slow first seconds on phones).
+      if (this.warm > 0 && a <= 0.001) a = 0.01;
       const vis = a > 0.001;
       for (const c of [L.stars, L.far, L.mid, L.fx]) { c.setVisible(vis); c.setAlpha(a >= 0.995 ? 1 : a); }
       if (!vis) return;
