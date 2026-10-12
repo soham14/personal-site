@@ -2,6 +2,8 @@ name: Deploy to GitHub Pages
 
 # Push trigger is enabled once the app builds; manual runs only for now.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:

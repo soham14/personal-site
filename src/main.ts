@@ -1,17 +1,24 @@
 import * as Phaser from 'phaser';
+import './styles.css';
+import { WorldScene } from './scenes/WorldScene.ts';
+import { initUI, registerSW } from './ui/index.ts';
+import { initTrials } from './trials/index.ts';
+import { initAudio, toggleSound } from './audio/audio.ts';
+import { on } from './state.ts';
 
-class BootScene extends Phaser.Scene {
-  constructor() { super('boot'); }
-  create() {
-    this.add.text(20, 20, 'Career Quest: loading…', { fontFamily: 'monospace', color: '#f2b632' });
-  }
-}
+const ui = document.getElementById('ui')!;
+initUI(ui);
+initTrials(ui);
+initAudio();
+on('soundToggle' as any, () => toggleSound());
 
 new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
   backgroundColor: '#0b1330',
   pixelArt: true,
-  scale: { mode: Phaser.Scale.RESIZE },
-  scene: [BootScene]
+  scale: { mode: Phaser.Scale.RESIZE, width: window.innerWidth, height: window.innerHeight },
+  scene: [WorldScene]
 });
+
+registerSW();

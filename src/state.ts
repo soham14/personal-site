@@ -71,9 +71,10 @@ export function inputLocked(): boolean {
 //  'titleUnlocked' {title}
 //  'sfx' {name, a?, b?}              play a sound effect
 //  'jump' {} | 'land' {fall}         movement cues (audio)
+//  'soundToggle' {}                  sound button / M key: audio module flips music+sfx together (mockup soundAll)
 export type EventName =
   | 'log' | 'enterMap' | 'advance' | 'reward' | 'sealed' | 'talk' | 'trialOffer' | 'trialDone'
-  | 'titleUnlocked' | 'sfx' | 'jump' | 'land' | 'walkTo';
+  | 'titleUnlocked' | 'sfx' | 'jump' | 'land' | 'walkTo' | 'soundToggle';
 type Handler = (payload: any) => void;
 const handlers = new Map<EventName, Set<Handler>>();
 

@@ -1,0 +1,12 @@
+{
+  "name": "Soham · Career Quest",
+  "short_name": "Career Quest",
+  "description": "Soham, Senior Software Engineer at Roblox. Play through his career as a side-scrolling quest, or open the résumé.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0b1330",
+  "theme_color": "#0b1330",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
