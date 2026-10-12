@@ -200,17 +200,36 @@ function talkHTML(): string {
 }
 
 // ---------- résumé overlay ----------
-function syncResume(): void {
+// Built once in the background soon after load and then only shown/hidden, so opening it is instant.
+// (visibility, not display:none, so the iframe's page and fonts are fully laid out ahead of time)
+function buildResume(): HTMLElement {
   const slot = slots.resume;
-  if (!state.resumeOpen) { if (slot.firstChild) slot.innerHTML = ''; return; }
-  if (slot.firstChild) return;
-  slot.appendChild(el(`<div class="cq-resume" role="dialog" aria-modal="true" aria-label="Résumé">
+  let r = slot.firstElementChild as HTMLElement | null;
+  if (r) return r;
+  r = el(`<div class="cq-resume" role="dialog" aria-modal="true" aria-label="Résumé" style="visibility:hidden;pointer-events:none;" aria-hidden="true">
   <div style="flex:none;display:flex;justify-content:flex-start;padding:12px 16px;background:#f6f3ea;border-bottom:2px solid #c9c2ad;">
-    <button type="button" data-act="closeResume" style="display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;box-sizing:border-box;${FP}font-size:15px;font-weight:700;color:#ffd166;background:#1b2040;border:3px solid #1b2040;border-radius:0;cursor:pointer;box-shadow:3px 3px 0 #ffd166;">&#9664; Back to the game</button>
+    <button type="button" data-act="closeResume" tabindex="-1" style="display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;box-sizing:border-box;${FP}font-size:15px;font-weight:700;color:#ffd166;background:#1b2040;border:3px solid #1b2040;border-radius:0;cursor:pointer;box-shadow:3px 3px 0 #ffd166;">&#9664; Back to the game</button>
   </div>
-  <iframe title="Résumé" src="resume/?embedded=1"></iframe>
-</div>`));
-  (slot.querySelector('[data-act="closeResume"]') as HTMLElement).focus();
+  <iframe title="Résumé" src="resume/?embedded=1" tabindex="-1"></iframe>
+</div>`);
+  slot.appendChild(r);
+  return r;
+}
+function syncResume(): void {
+  const open = state.resumeOpen;
+  const r = open ? buildResume() : (slots.resume.firstElementChild as HTMLElement | null);
+  if (!r || (r as any)._open === open) return;
+  (r as any)._open = open;
+  r.style.visibility = open ? 'visible' : 'hidden';
+  r.style.pointerEvents = open ? 'auto' : 'none';
+  r.setAttribute('aria-hidden', open ? 'false' : 'true');
+  r.querySelectorAll('button, iframe').forEach((x) => x.setAttribute('tabindex', open ? '0' : '-1'));
+  if (open) (r.querySelector('[data-act="closeResume"]') as HTMLElement).focus();
+}
+function preloadResume(): void {
+  const go = () => buildResume();
+  const ric = (window as any).requestIdleCallback as ((cb: () => void, o?: { timeout: number }) => void) | undefined;
+  window.addEventListener('load', () => { if (ric) ric(go, { timeout: 2500 }); else setTimeout(go, 1200); }, { once: true });
 }
 
 // ---------- transient: banner, toast, JOB ADVANCED, reward ----------
@@ -367,6 +386,7 @@ function onKey(e: KeyboardEvent): void {
 
 /** Mount all DOM overlays into `root` (#ui). */
 export function initUI(root: HTMLElement): void {
+  preloadResume();
   ui = root;
   const mk = (name: string, style: string) => { const d = document.createElement('div'); d.dataset.slot = name; if (style) d.setAttribute('style', style); slots[name] = d; return d; };
   const center = mk('center', 'position:absolute;left:0;right:0;top:116px;z-index:12;display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 12px;box-sizing:border-box;pointer-events:none;');
