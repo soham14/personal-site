@@ -6,6 +6,8 @@ import { esc, ACC, FP, titleSkin, expPct } from './util.ts';
 
 const flipped: Record<number, boolean> = {};
 export function toggleFlip(i: number): void { flipped[i] = !flipped[i]; }
+/** Turn every journey crest back to its front (fresh start / tests). */
+export function resetFlips(): void { for (const k of Object.keys(flipped)) delete flipped[Number(k)]; }
 
 const CLOSE_X = (c: string) => `<svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" shape-rendering="crispEdges"><path d="M1 1 L13 13 M13 1 L1 13" style="stroke:${c};stroke-width:3;fill:none;"/></svg>`;
 
@@ -24,7 +26,7 @@ function journey(): string {
     const chip = FP + 'flex:none;margin-left:auto;padding:3px 8px;font-size:12px;font-weight:700;letter-spacing:1px;' +
       (!on ? 'background:transparent;color:#3d3947;border:2px dashed #5a5560;' : (cur ? 'background:#1b2040;color:#ffd166;border:2px solid #1b2040;' : 'background:#f4f1e8;color:#1b2040;border:2px solid #1b2040;'));
     const aria = c.crest + ', ' + c.org + ', ' + c.title + ', ' + c.dates + ', ' + c.team + '. ' + (on ? '' : 'Not yet earned. ') + (flip ? 'Showing details. Press to flip back.' : 'Press to flip for details.');
-    return `<div style="position:relative;z-index:1;display:flex;flex-direction:column;gap:8px;padding:8px;box-sizing:border-box;color:#1b2040;${row}">
+    return `<div data-stage="${i}" data-unlocked="${on}" style="position:relative;z-index:1;display:flex;flex-direction:column;gap:8px;padding:8px;box-sizing:border-box;color:#1b2040;${row}">
       <div style="display:flex;align-items:center;gap:12px;">
         <span aria-hidden="true" data-portrait="${i}" style="position:relative;display:block;flex:none;width:64px;height:64px;overflow:hidden;border:2px solid #1b2040;background:#2a3166;opacity:${on ? 1 : 0.45};"></span>
         <span style="position:relative;flex:none;width:76px;height:88px;perspective:400px;">
@@ -86,13 +88,22 @@ function skills(): string {
 </div>`;
 }
 
-const starsOf = (n: number) => (n >= 5 ? '5 stars' : (n === 1 ? '1 star' : n + ' stars'));
-const RATE: Record<TrialKind, (v: number) => string> = {
-  hex: (s) => s + ' pts · ' + starsOf(s >= 300 ? 5 : s >= 220 ? 4 : s >= 140 ? 3 : s >= 60 ? 2 : 1),
-  lan: (s) => s + ' pts · ' + starsOf(s >= 330 ? 5 : s >= 260 ? 4 : s >= 190 ? 3 : s >= 110 ? 2 : 1),
-  rush: (s) => s + ' caught · ' + starsOf(s >= 25 ? 5 : s >= 18 ? 4 : s >= 12 ? 3 : s >= 6 ? 2 : 1),
-  stk: (v) => v + (v === 1 ? ' floor' : ' floors')
+/** Scores at which a trial's rating reaches 2, 3, 4 and 5 stars (Keep Leveling is rated in floors). */
+export const STAR_AT: Record<Exclude<TrialKind, 'stk'>, readonly number[]> = {
+  hex: [60, 140, 220, 300],
+  lan: [110, 190, 260, 330],
+  rush: [6, 12, 18, 25]
 };
+/** Star rating (1-5) of a trial score: one star, plus one per threshold reached. */
+export function trialStars(kind: Exclude<TrialKind, 'stk'>, score: number): number {
+  return 1 + STAR_AT[kind].filter((t) => score >= t).length;
+}
+const starsOf = (n: number) => (n === 1 ? '1 star' : n + ' stars');
+/** "Best this session" text for a trial (score + stars, or floors for Keep Leveling). */
+export function trialRecord(kind: TrialKind, v: number): string {
+  if (kind === 'stk') return v + (v === 1 ? ' floor' : ' floors');
+  return v + (kind === 'rush' ? ' caught · ' : ' pts · ') + starsOf(trialStars(kind, v));
+}
 
 // Achievement copy is from the approved mockup (not yet in content.ts).
 const ACHIEVEMENTS = [
@@ -115,10 +126,10 @@ function trophies(): string {
       (on ? 'background:#fff3cf;border:2px solid #1b2040;box-shadow:3px 3px 0 #1b2040;color:#1b2040;' : 'background:transparent;border:2px dashed #5a5560;color:#3d3947;');
     const badge = FP + 'align-self:flex-start;padding:2px 8px;font-size:14px;font-weight:700;letter-spacing:1px;' +
       (on ? 'background:#1b2040;color:' + ACC + ';border:2px solid #1b2040;' : 'background:transparent;color:#3d3947;border:2px dashed #5a5560;');
-    return `<div style="${tile}">
+    return `<div data-trophy="${k}" data-unlocked="${on}" style="${tile}">
       <span style="${badge}">${esc(d.title)}</span>
       <span style="${FP}font-size:12px;font-weight:700;letter-spacing:1px;color:${on ? '#8a6400' : '#3d3947'};">${on ? 'Unlocked' : 'Locked'}</span>
-      ${on && d.title === shown ? `<span style="${FP}font-size:12px;font-weight:700;letter-spacing:1px;color:#1b2040;background:${ACC};border:2px solid #1b2040;padding:1px 6px;align-self:flex-start;">Shown above your head</span>` : ''}
+      ${on && d.title === shown ? `<span data-shown style="${FP}font-size:12px;font-weight:700;letter-spacing:1px;color:#1b2040;background:${ACC};border:2px solid #1b2040;padding:1px 6px;align-self:flex-start;">Shown above your head</span>` : ''}
       ${on ? '' : `<span style="font-size:12px;line-height:1.5;">How to earn: ${esc(d.how)}.</span>`}
     </div>`;
   }).join('');
@@ -126,11 +137,11 @@ function trophies(): string {
     const d = TRIALS[k];
     const best = state.best[k] || 0;
     const has = best > 0;
-    return `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 12px;background:#f4f1e8;border:2px solid #1b2040;box-shadow:3px 3px 0 #1b2040;color:#1b2040;">
+    return `<div data-record="${k}" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 12px;background:#f4f1e8;border:2px solid #1b2040;box-shadow:3px 3px 0 #1b2040;color:#1b2040;">
       <div style="flex:1 1 160px;min-width:0;">
         <div style="${FP}font-size:17px;font-weight:700;">${esc(d.name)}</div>
         <div style="font-size:12px;line-height:1.5;color:#3d3947;">Mentor: ${esc(MENTORS[d.mentor].name)}</div>
-        <div style="font-size:13px;line-height:1.4;font-weight:700;color:${has ? '#1b2040' : '#3d3947'};">${has ? 'Best this session: ' + esc(RATE[k](best)) : 'No run yet'}</div>
+        <div style="font-size:13px;line-height:1.4;font-weight:700;color:${has ? '#1b2040' : '#3d3947'};">${has ? 'Best this session: ' + esc(trialRecord(k, best)) : 'No run yet'}</div>
       </div>
       <button type="button" data-act="play" data-kind="${k}" aria-label="Play ${esc(d.name)}" style="${FP}flex:none;min-height:44px;padding:6px 14px;font-size:14px;font-weight:700;letter-spacing:1px;cursor:pointer;background:#1b2040;color:${ACC};border:2px solid #1b2040;box-shadow:3px 3px 0 #000;">Play</button>
     </div>`;
