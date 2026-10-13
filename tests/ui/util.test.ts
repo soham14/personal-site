@@ -52,9 +52,9 @@ describe('titleSkin', () => {
   it('falls back to a default skin for unknown titles', () => {
     expect(titleSkin('not a real title')).toEqual(titleSkin(''));
   });
-  it('gives titles their own look rather than one shared skin', () => {
-    const distinct = new Set(titles.map((t) => JSON.stringify(titleSkin(t))));
-    expect(distinct.size).toBeGreaterThan(1);
+  it('gives every title its own background colour, so no two titles look alike', () => {
+    const bgs = new Set(titles.map((t) => titleSkin(t).bg));
+    expect(bgs.size).toBe(titles.length);
   });
 });
 

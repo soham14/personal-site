@@ -1,3 +1,4 @@
+import { titleSkin } from '../../src/ui/util.ts';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // The four trial games are replaced by controllable fakes: these tests cover the controller (prompt -> play -> results),
@@ -401,6 +402,19 @@ describe('titles', () => {
     expect(state.titles).toEqual(['Other', 'Another', title]);
     expect(unlocked).toEqual([{ title }]);
     expect(overlay().textContent).toContain(title);
+  });
+
+  it.each(Object.keys(TRIALS) as TrialKind[])('%s: the "title unlocked" chip uses the same colours as the title over the hero', (kind) => {
+    const title = TRIALS[kind].title;
+    playTo(kind, kind === 'stk' ? { won: true, score: 1, stars: 0, bonus: 0, floors: 1, title: true } : result({ stars: 5 }));
+    const chip = Array.from(overlay().querySelectorAll<HTMLElement>('div')).find((d) => d.textContent === 'Title unlocked: ' + title)!;
+    expect(chip).toBeTruthy();
+    const ref = document.createElement('div');
+    const k = titleSkin(title);
+    ref.style.background = k.bg; ref.style.color = k.tx; ref.style.borderColor = k.bd;
+    expect(chip.style.backgroundColor || chip.style.background).toContain(ref.style.backgroundColor || ref.style.background);
+    expect(chip.style.color).toBe(ref.style.color);
+    expect(chip.style.borderColor).toBe(ref.style.borderColor);
   });
 
   it('fewer than five stars unlocks nothing', () => {

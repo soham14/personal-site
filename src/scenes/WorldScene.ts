@@ -2,6 +2,7 @@
 // names, scenery, gates, portal, sealed gate, banners, platforms, ladders), mentors, the player with his aura,
 // and the job-advancement burst. Mirrors the mockup's stage DOM (CareerQuest.dc.html ~line 80-250, renderVals).
 import * as Phaser from 'phaser';
+import { titleSkin } from '../ui/util.ts';
 import { MAPS, MENTORS, PORTAL, PROFILE } from '../content.ts';
 import { state } from '../state.ts';
 import { legacy } from '../render/legacy.ts';
@@ -419,8 +420,8 @@ export class WorldScene extends Phaser.Scene {
       this.titleText = top;
       if (this.titleChip) { this.titleChip.destroy(); this.titleChip = null; }
       if (top) {
-        const skin = top === 'Seal Breaker' ? ['#f2b632', '#1d3a6b', '#1b2040'] : top === 'Lamplighter' ? ['#2f7fd6', '#f4f8ff', '#ffb454']
-          : top === 'Always Growing' ? ['#c9ccd3', '#2b2b2e', '#2b2b2e'] : ['#c8323a', '#f6ecd2', '#1b2040'];
+        const k = titleSkin(top); // same colours as the trial results window and profile
+        const skin = [k.bg, k.tx, k.bd];
         const L = labelTexture(this, top, 'background:' + skin[0] + ';color:' + skin[1] + ';border:2px solid ' + skin[2] + ";box-shadow:2px 2px 0 #000;font-family:'Pixelify Sans',monospace;font-size:11px;font-weight:700;letter-spacing:1px;white-space:nowrap;display:flex;box-sizing:border-box;padding:0 8px;", 8, 20, '700 11px ' + PIX, 1);
         this.titleChip = this.add.image(0, 0, L.key);
         this.hero.add(this.titleChip);
