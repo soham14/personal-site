@@ -4,7 +4,8 @@ import './trials.css';
 import { TRIALS, MENTORS, MAPS, type TrialKind } from '../content.ts';
 import { state, setState, on, emit } from '../state.ts';
 import { el, fontP, log } from './dom.ts';
-import { palette, stdWindow, btnP, btnS, button, CRIM, CREAMT } from './shell.ts';
+import { titleSkin } from '../ui/util.ts';
+import { palette, stdWindow, btnP, btnS, button } from './shell.ts';
 import type { TrialGame, TrialResult } from './types.ts';
 import { createHex } from './hex.ts';
 import { createLan } from './lan.ts';
@@ -22,12 +23,12 @@ const PROMPT_TEXT: Record<TrialKind, string> = {
   lan: 'The grove ahead is dark. Light the lanterns in matching pairs and the path will open. Quick eyes, Mage!',
   rush: 'Before you advance, show me you can spot quality. Catch the five-star reviews, dodge the one-star pebbles. Twenty seconds!'
 };
-const TITLE_SKIN: Record<TrialKind, string> = {
-  hex: 'background:#f2b632;color:#1d3a6b;border:2px solid #1b2040;',
-  lan: 'background:#c8323a;color:#fff1d6;border:2px solid #ffb454;',
-  stk: 'background:#c9ccd3;color:#2b2b2e;border:2px solid #2b2b2e;',
-  rush: 'background:' + CRIM + ';color:' + CREAMT + ';border:2px solid #1b2040;'
-};
+
+/** Title chip colours come from the one shared helper, so the results window matches the chip over the hero. */
+function skinCss(title: string): string {
+  const k = titleSkin(title);
+  return 'background:' + k.bg + ';color:' + k.tx + ';border:2px solid ' + k.bd + ';';
+}
 
 export function initTrials(root: HTMLElement): void {
   const overlay = el('div', 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:40;background:rgba(15,18,38,0.72);pointer-events:auto;display:none;outline:none;');
@@ -169,7 +170,7 @@ export function initTrials(root: HTMLElement): void {
     const note = isStk ? (r.capped ? 'Almost there… the gate holds. (Quest in progress)' : '') : (!won && gate ? 'You can still pass the gate, without a bonus.' : '');
     if (note) box.appendChild(el('div', detailSt, note));
     if (isStk ? !!r.title : r.stars === 5) {
-      box.appendChild(el('div', fontP + 'display:inline-block;padding:3px 10px;font-size:14px;font-weight:700;letter-spacing:1px;box-shadow:2px 2px 0 #000;' + TITLE_SKIN[kind], 'Title unlocked: ' + TRIALS[kind].title));
+      box.appendChild(el('div', fontP + 'display:inline-block;padding:3px 10px;font-size:14px;font-weight:700;letter-spacing:1px;box-shadow:2px 2px 0 #000;' + skinCss(TRIALS[kind].title), 'Title unlocked: ' + TRIALS[kind].title));
     }
     const btns = el('div', 'display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:6px;');
     btns.append(button(isStk ? 'Done' : 'Continue', btnP(P), cont), button('Retry', btnS, () => begin(true)));
